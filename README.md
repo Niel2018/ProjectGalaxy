@@ -1,0 +1,2 @@
+# ProjectGalaxy
+python stock analyser
