@@ -28,13 +28,15 @@ SH_TRANSFER_RATE = (0.02/1000)
 def get_data_time(data, time_index):
     return data.iat[time_index, COL_DATE]
 
+
 # 根据价格索引从dataframe中获取价格
 def get_data_price(data, price_index, price_type):
     return data.iat[price_index, price_type]
 
+
 # 时间价格对
 def get_data_time_price_item(data, timeprice_index, price_type):
-    return TimePriceItem(get_time(data, timeprice_index), get_price(data, timeprice_index, price_type))
+    return TimePriceItem(get_data_time(data, timeprice_index), get_data_price(data, timeprice_index, price_type))
 
 ########################################################################################################################
 # 获取、更新以及保存交易数据源类
@@ -155,11 +157,10 @@ class CalcStockGain(object):
                         self.money += self.stock_num * stock_sell_price - calc_get_sell_stock_cost(self.stock_code, self.stock_num, stock_sell_price)
                         self.stock_num = 0
                         self.stock_sell_num += 1
-                        self.sell_list.append(get_data_time(data, i), stock_sell_price)
+                        self.sell_list.append(TimePriceItem(get_data_time(data, i), stock_sell_price))
                         # 计算买入成功率
                         if stock_sell_price > stock_buy_price:
                             self.stock_buy_succ_num += 1
-
 
         # 显示最终金额以及买入卖出数据,如果股票没有卖出要采用最后一天的价格来计算
         self.general_asset = self.money + self.stock_num * data.iat[ma_list_len-1, price_type]
@@ -238,6 +239,7 @@ def calc_get_sell_stock_cost(stock_code, sell_stock_num, stock_price):
 ########################################################################################################################
 # 均线交易
 
+
 # MACD交易
 # 具体计算公式及例子如下：
 # EMA（12）= 前一日EMA（12）×11/13＋今日收盘价×2/13 = 前一日EMA（12）+ （今日收盘价 - 前一日EMA（12））* 2 / 13
@@ -314,25 +316,6 @@ class CalcMACD(object):
                                                         self.EMA26_list[i].price, self.DIFF_list[i].price,
                                                         self.DEA_list[i].price, self.BAR_list[i].price))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#
 
 
 

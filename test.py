@@ -178,10 +178,15 @@ def main():
     '''
 
     # 2015到最近震荡趋势
-    data = ts.get_k_data('002322', autype=None, start='2009-12-18', end='2009-12-21')
-    a1 = Sa.CalcMACD(data)
-    a1.print_MACD()
+    # data = ts.get_k_data('002322', autype=None, start='2009-12-18', end='2009-12-21')
+    # a1 = Sa.CalcMACD(data)
+    # a1.print_MACD()
     # calc_best_ma_len(data, stock_code='600021', start='2017-01-01', end='2018-06-15')
+    # del data
+
+    # 2008年10月31日到最近震荡趋势
+    data = ts.get_k_data('600000', start='2008-11-1', end='2018-6-14')
+    calc_best_ma_len(data, stock_code='600000', start='2008-11-1', end='2018-6-14')
     del data
 
 main()
