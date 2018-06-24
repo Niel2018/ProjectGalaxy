@@ -1,3 +1,5 @@
+import tushare as ts
+import progressbar as pb
 
 
 ########################################################################################################################
@@ -37,143 +39,6 @@ def get_data_price(data, price_index, price_type):
 # 时间价格对
 def get_data_time_price_item(data, timeprice_index, price_type):
     return TimePriceItem(get_data_time(data, timeprice_index), get_data_price(data, timeprice_index, price_type))
-
-########################################################################################################################
-# 获取、更新以及保存交易数据源类
-########################################################################################################################
-
-
-########################################################################################################################
-# 交易计算主程序类
-########################################################################################################################
-class CalcStockGain(object):
-    def __init__(self, data, stock_code='', buy_ma_len=5, sell_ma_len=5):
-        self.stock_code = stock_code    # 股票代码
-        self.buy_ma_len = buy_ma_len    # 买入时均线长度
-        self.sell_ma_len = sell_ma_len  # 卖出时均线长度
-        self.buy_ma_list = []           # 买入时均线价格列表, 用于计算和绘图
-        self.sell_ma_list = []          # 卖出时均线价格列表, 用于计算和绘图
-        self.money = 0                  # 现金
-        self.stock_num = 0              # 股票数量
-        self.stock_buy_price = 0        # 股票买入价
-        self.stock_buy_num = 0          # 买入次数
-        self.stock_sell_num = 0         # 卖出次数
-        self.stock_buy_succ_num = 0     # 买入成功次数, 卖出价大于买入价
-        self.general_asset = 0          # 资产总额, 现金+股票*当日收盘价
-        self.succ_ratio = 0             # 买入成功率
-        self.gain_ratio = 0             # 资产增值率
-        self.price_list = []            # 价格列表, 仅用于绘图
-        self.buy_list = []              # 买入价格列表, 仅用于绘图
-        self.sell_list = []             # 卖出价格列表, 仅用于绘图
-
-        self.get_price_list(data, COL_CLOSE)
-        self.get_ma_list(data, self.buy_ma_list, self.buy_ma_len)
-        self.get_ma_list(data, self.sell_ma_list, self.sell_ma_len)
-        self.calc_succ_ratio_and_gain(data)
-
-    # 获取时间价格列表
-    def get_price_list(self, data, price_type=COL_CLOSE):
-        for i in range(len(data)):
-            self.price_list.append(get_data_time_price_item(data, i, price_type))
-
-    # 计算某个价格对应的ma价格
-    def calc_ma_price(self, data, price_index, price_type=COL_CLOSE, ma_len=5):
-        if (ma_len > 0) and ((price_index + 1 - ma_len) >= 0):
-            # 利用开盘价计算均线，0列是时间，1列是开盘价，2是收盘价
-            ma_sum = 0.000
-            for j in range(ma_len):
-                ma_sum += float(get_data_price(data, price_index - j, price_type))
-            # 均线值
-            ma_price = ma_sum / ma_len
-        else:
-            ma_price = 0.000
-        return ma_price
-
-    def get_ma_list(self, data, ma_list, ma_len):
-        # 生成均线列表
-        for i in range(len(data)):
-            ma_price = self.calc_ma_price(data, i, price_type=COL_CLOSE, ma_len=ma_len)
-            # 加入均线列表中
-            ma_list.append(TimePriceItem(get_data_time(data, i), ma_price))
-
-    def get_buy_ma_list(self, data):
-        get_ma_list(data, self.buy_ma_list, self.buy_ma_len)
-
-    def get_sell_ma_list(self,data):
-        get_ma_list(data,self.sell_ma_list, self.sell_ma_len)
-
-    def display_ma_list(self):
-        for i in range(len(self.buy_ma_list)):
-            print('buy_ma_list')
-            print('date = %s, ma_price = %.3f' % (self.buy_ma_list[i].time, self.buy_ma_list[i].price))
-        for i in range(len(self.sell_ma_list)):
-            print('sell_ma_list')
-            print('date = %s, ma_price = %.3f' % (self.sell_ma_list[i].time, self.sell_ma_list[i].price))
-
-    # 验证在不同均线趋势变化时买入卖出算法的正确性以及盈利值, 按1W RMB，按收盘价买入卖出
-    def calc_succ_ratio_and_gain(self, data, init_money=10000, price_type = COL_CLOSE):
-        self.money = init_money
-        self.stock_num = 0
-        self.stock_buy_price = 0
-        self.stock_buy_num = 0
-        self.stock_sell_num = 0
-        self.stock_buy_succ_num = 0
-        self.general_asset = 0
-        self.gain_ratio = 0
-        self.succ_ratio = 0
-        self.buy_list = []
-        self.sell_list = []
-
-        # 默认buy_ma_list和sell_ma_list时一样的长度
-        ma_list_len = len(self.buy_ma_list)
-        if (0 >= ma_list_len) or (0 >= init_money):
-            print('error ma list len %d or init money %0.3f' % (ma_list_len, init_money))
-            return
-
-        stock_buy_price = 0
-
-        for i in range(ma_list_len):
-            j = i-1
-            if (j >= 0) and (0 < self.buy_ma_list[i].price) and (0 < self.buy_ma_list[j].price):
-                # 趋势向上买入股票
-                if self.buy_ma_list[i].price > self.buy_ma_list[j].price:
-                    temp_stock_price = get_data_price(data, i, price_type)
-                    # 只有没有股票并且钱至少够买100股的情况下才计算买入，不存在多次连续买入的情况
-                    if (0 == self.stock_num) and ((self.money // temp_stock_price) >= 100):
-                        stock_buy_price = temp_stock_price  # 成功买入时才会记录stock_buy_price
-                        # 购买的股票必须是100的整数倍,并且要扣佣金等费用
-                        afford_stock_num = calc_affordable_buy_stock_num(self.stock_code, self.money, stock_buy_price)
-                        self.stock_num += afford_stock_num
-                        self.money -= afford_stock_num * stock_buy_price
-                        # 记录买入
-                        self.stock_buy_num += 1
-                        self.buy_list.append(TimePriceItem(get_data_time(data, i), stock_buy_price))
-
-            if (j >= 0) and (0 < self.sell_ma_list[i].price) and (0 < self.sell_ma_list[j].price):
-                # 趋势向下卖出股票
-                if self.sell_ma_list[i].price < self.sell_ma_list[j].price:
-                    if 0 < self.stock_num:
-                        stock_sell_price = get_data_price(data, i, price_type)
-                        self.money += self.stock_num * stock_sell_price - calc_get_sell_stock_cost(self.stock_code, self.stock_num, stock_sell_price)
-                        self.stock_num = 0
-                        self.stock_sell_num += 1
-                        self.sell_list.append(TimePriceItem(get_data_time(data, i), stock_sell_price))
-                        # 计算买入成功率
-                        if stock_sell_price > stock_buy_price:
-                            self.stock_buy_succ_num += 1
-
-        # 显示最终金额以及买入卖出数据,如果股票没有卖出要采用最后一天的价格来计算
-        self.general_asset = self.money + self.stock_num * data.iat[ma_list_len-1, price_type]
-        print('money = %.3f, stork_num = %d, general_asset = %.3f' % (self.money, self.stock_num, self.general_asset))
-        print('stock_buy_num = %d, stock_sell_num = %d, stock_buy_succ_num = %d' % (self.stock_buy_num, self.stock_sell_num, self.stock_buy_succ_num))
-
-        self.gain_ratio = (self.general_asset - init_money)/init_money*100
-        if 0 < self.stock_buy_num:
-            self.succ_ratio = self.stock_buy_succ_num/self.stock_buy_num*100
-        else:
-            self.succ_ratio = 0
-        print('gain_ratio = %.2f%%, succ_ratio = %.2f%%' % (self.gain_ratio, self.succ_ratio))
-        print('buy_ma_len = %d, sell_ma_len = %d' % (self.buy_ma_len, self.sell_ma_len))
 
 
 ########################################################################################################################
@@ -220,7 +85,9 @@ def calc_affordable_buy_stock_num(stock_code, money, stock_price):
     while True:
         if 0 >= buy_stock_num:
             return 0
-        left_money = money - (buy_stock_num * stock_price) - calc_get_buy_stock_cost(stock_code, buy_stock_num, stock_price)
+        left_money = money - (buy_stock_num * stock_price) - calc_get_buy_stock_cost(stock_code,
+                                                                                     buy_stock_num,
+                                                                                     stock_price)
         if 0 > left_money:  # 回退100股继续计算
             buy_stock_num -= 100
         else:
@@ -234,10 +101,248 @@ def calc_get_sell_stock_cost(stock_code, sell_stock_num, stock_price):
     sh_transfer_fare = get_sh_transfer_fare(stock_code, sell_stock_num, stock_price)
     return tax_fare + broker_commission + sh_transfer_fare
 
+
 ########################################################################################################################
-# 买卖策略
+# 获取、更新以及保存交易数据源类
 ########################################################################################################################
-# 均线交易
+class GetStockRawData(object):
+    def __init__(self, stock_code, start, end):
+        self.stock_code = stock_code  # 股票代码
+        self.start = start
+        self.end = end
+        self.data = ts.get_k_data(stock_code, start, end)
+
+
+########################################################################################################################
+# 交易策略
+########################################################################################################################
+class BaseTradeStrategy(object):
+    def __init__(self, stock_raw_data_obj, init_money):
+        self.stock_code = stock_raw_data_obj.stock_code     # 股票代码
+        self.data = stock_raw_data_obj.data                 # 原始数据
+        self.init_money = init_money    # 初始资金
+        self.money = init_money  # 当前资金，用于计算过程
+        self.stock_num = 0
+        self.buy_list = []
+        self.stock_buy_num = 0
+        self.stock_last_buy_time = ''
+        self.stock_last_buy_price = 0
+        self.sell_list = []
+        self.stock_sell_num = 0
+        self.stock_last_sell_time = ''
+        self.stock_last_sell_price = 0
+        self.stock_buy_succ_num = 0
+        self.general_asset = 0          # 资产总额, 现金+股票*当日收盘价
+        self.succ_ratio = 0             # 买入成功率
+        self.gain_ratio = 0             # 资产增值率
+
+    # 买入股票
+    def buy_stock(self, intent_stock_buy_time, intent_stock_buy_price):
+        # 购买的股票必须是100的整数倍,并且要扣佣金等费用
+        afford_stock_num = calc_affordable_buy_stock_num(self.stock_code, self.money, intent_stock_buy_price)
+        # 钱至少够买100股的情况下才计算买入，不存在多次连续买入的情况
+        if (0 != self.stock_num) or (100 > afford_stock_num):
+            return
+        self.stock_num += afford_stock_num
+        self.money -= afford_stock_num * intent_stock_buy_price
+        # 记录成功买入的时间和价格
+        self.stock_buy_num += 1
+        self.buy_list.append(TimePriceItem(intent_stock_buy_time, intent_stock_buy_price))
+        self.stock_last_buy_time = intent_stock_buy_time
+        self.stock_last_buy_price = intent_stock_buy_price
+
+    # 卖出股票
+    def sell_stock(self, intent_stock_sell_time, intent_stock_sell_price):
+        if 0 >= self.stock_num:
+            return
+        # 假定卖出股票的钱一定比手续费多
+        self.money += self.stock_num * intent_stock_sell_price - \
+            calc_get_sell_stock_cost(self.stock_code, self.stock_num, intent_stock_sell_price)
+        self.stock_num = 0
+        # 记录成功卖出的时间和价格
+        self.stock_sell_num += 1
+        self.sell_list.append(TimePriceItem(intent_stock_sell_time, intent_stock_sell_price))
+        self.stock_last_sell_time = intent_stock_sell_time
+        self.stock_last_sell_price = intent_stock_sell_price
+        # 卖出时计算买入成功率, 卖出金额>买入金额*1.01, 代价按1%来计算
+        if self.stock_last_sell_price > self.stock_last_buy_price*1.01:
+            self.stock_buy_succ_num += 1
+
+    def print_gain_ratio(self, list_len):
+        # 显示最终金额以及买入卖出数据,如果股票没有卖出要采用最后一天的价格来计算
+        self.general_asset = self.money + self.stock_num * get_data_price(self.data, list_len - 1, COL_CLOSE)
+        print('money = %.3f, stork_num = %d, general_asset = %.3f' % (self.money, self.stock_num, self.general_asset))
+        print('stock_buy_num = %d, stock_sell_num = %d, stock_buy_succ_num = %d' % (self.stock_buy_num,
+                                                                                    self.stock_sell_num,
+                                                                                    self.stock_buy_succ_num))
+        # 计算买卖成功率
+        self.gain_ratio = (self.general_asset - self.init_money) / self.init_money * 100
+        if 0 < self.stock_buy_num:
+            self.succ_ratio = self.stock_buy_succ_num / self.stock_buy_num * 100
+        else:
+            self.succ_ratio = 0
+        print('gain_ratio = %.2f%%, succ_ratio = %.2f%%' % (self.gain_ratio, self.succ_ratio))
+
+
+########################################################################################################################
+# 基于均线买卖的策略
+########################################################################################################################
+class MATradeStrategy(BaseTradeStrategy):
+    def __init__(self, stock_raw_data_obj, init_money, buy_ma_len=5, sell_ma_len=5):
+        BaseTradeStrategy.__init__(self, stock_raw_data_obj, init_money)
+        self.buy_ma_len = buy_ma_len    # 买入时均线长度
+        self.sell_ma_len = sell_ma_len  # 卖出时均线长度
+        self.buy_ma_list = []           # 买入时均线价格列表, 用于计算和绘图
+        self.sell_ma_list = []          # 卖出时均线价格列表, 用于计算和绘图
+
+        # 获取买入卖出MA价格列表
+        self.get_ma_list(self.buy_ma_list, self.buy_ma_len)
+        self.get_ma_list(self.sell_ma_list, self.sell_ma_len)
+
+    # 计算某个价格对应的ma价格
+    def calc_ma_price(self, price_index, ma_len):
+        if (ma_len > 0) and ((price_index + 1 - ma_len) >= 0):
+            # 利用开盘价计算均线，0列是时间，1列是开盘价，2是收盘价
+            ma_sum = 0.000
+            for j in range(ma_len):
+                ma_sum += float(get_data_price(self.data, price_index - j, COL_CLOSE))
+            # 均线值
+            ma_price = ma_sum / ma_len
+        else:
+            ma_price = 0.000
+        return ma_price
+
+    # 获取MA价格列表
+    def get_ma_list(self, ma_list, ma_len):
+        # 生成均线列表
+        for i in range(len(self.data)):
+            ma_price = self.calc_ma_price(i, ma_len)
+            # 加入均线列表中
+            ma_list.append(TimePriceItem(get_data_time(self.data, i), ma_price))
+
+    def display_ma_list(self):
+        for i in range(len(self.buy_ma_list)):
+            print('buy_ma_list')
+            print('date = %s, ma_price = %.3f' % (self.buy_ma_list[i].time, self.buy_ma_list[i].price))
+        for i in range(len(self.sell_ma_list)):
+            print('sell_ma_list')
+            print('date = %s, ma_price = %.3f' % (self.sell_ma_list[i].time, self.sell_ma_list[i].price))
+
+    def run_trade_strategy(self):
+        # buy_ma_list和sell_ma_list时一样的长度
+        buy_ma_list_len = len(self.buy_ma_list)
+        sell_ma_list_len = len(self.sell_ma_list)
+        if (0 >= self.money) or (0 >= buy_ma_list_len) or (0 >= sell_ma_list_len) \
+                or (buy_ma_list_len != sell_ma_list_len):
+            print('error ma list len %d or init money %0.3f' % (buy_ma_list_len, self.money))
+            return
+
+        # 按MA均线判断收益率
+        for i in range(buy_ma_list_len):
+            j = i - 1
+            if 0 <= j:
+                # 趋势向上买入股票
+                if (0 < self.buy_ma_list[i].price) and (0 < self.buy_ma_list[j].price):
+                    if self.buy_ma_list[i].price > self.buy_ma_list[j].price:
+                        # 买入股票
+                        self.buy_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
+                # 趋势向下卖出股票
+                if (0 < self.sell_ma_list[i].price) and (0 < self.sell_ma_list[j].price):
+                    if self.sell_ma_list[i].price < self.sell_ma_list[j].price:
+                        # 卖出股票
+                        self.sell_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
+
+        print(' ', end='\n')
+        print('MATradeStrategy: buy_ma_len = %d, sell_ma_len = %d' % (self.buy_ma_len, self.sell_ma_len))
+        self.print_gain_ratio(buy_ma_list_len)
+
+
+########################################################################################################################
+# 计算最佳均线交易
+########################################################################################################################
+# 验证在不同均线趋势变化时买入卖出算法的正确性以及盈利值, 按1W RMB，按收盘价买入卖出，计算最优ma len
+def calc_best_ma_trade_strategy(stock_code, start, end, max_buy_ma_len, max_sell_ma_len, init_money):
+    # 初始化进度条
+    total = max_buy_ma_len * max_sell_ma_len
+    progress = 0
+    widgets = ['Progress: ', pb.Percentage(), ' ', pb.Bar('#'), ' ', pb.Timer(), ' ', pb.ETA(), ' ']
+    pbar = pb.ProgressBar(widgets=widgets, maxval=total).start()
+    # 初始化股票数据
+    stock_raw_data_obj = GetStockRawData(stock_code, start, end)
+
+    max_general_asset = 0
+    max_stock_code = 0
+    max_money = 0
+    max_stock_num = 0
+    max_stock_buy_num = 0
+    max_stock_sell_num = 0
+    max_stock_buy_succ_num = 0
+    max_gain_ratio = 0
+    max_succ_ratio = 0
+    best_buy_ma_len = 0
+    best_sell_ma_len = 0
+
+    # 画图列表
+    # price_list = []
+    buy_list = []
+    sell_list = []
+
+    for i in range(1, max_buy_ma_len):
+        for j in range(1, max_sell_ma_len):
+            trade_strategy_obj = MATradeStrategy(stock_raw_data_obj, init_money, i, j)
+            trade_strategy_obj.run_trade_strategy()
+            if max_general_asset < trade_strategy_obj.general_asset:
+                max_stock_code = trade_strategy_obj.stock_code
+                max_money = trade_strategy_obj.money
+                max_stock_num = trade_strategy_obj.stock_num
+                max_stock_buy_num = trade_strategy_obj.stock_buy_num
+                max_stock_sell_num = trade_strategy_obj.stock_sell_num
+                max_stock_buy_succ_num = trade_strategy_obj.stock_buy_succ_num
+                max_general_asset = trade_strategy_obj.general_asset
+                max_gain_ratio = trade_strategy_obj.gain_ratio
+                max_succ_ratio = trade_strategy_obj.succ_ratio
+                # price_list = trade_strategy_obj.price_list
+                buy_list = trade_strategy_obj.buy_list
+                sell_list = trade_strategy_obj.sell_list
+                best_buy_ma_len = trade_strategy_obj.buy_ma_len
+                best_sell_ma_len = trade_strategy_obj.sell_ma_len
+
+            # 更新进度
+            progress += 1
+            pbar.update(progress)
+
+            # 删除对象释放内存
+            del trade_strategy_obj
+
+    del pbar
+
+    print(' ', end='\n')
+    print('stock_code = %s' % max_stock_code)
+    print('money = %.3f, stork_num = %d, general_asset = %.3f' % (max_money, max_stock_num, max_general_asset))
+    print('stock_buy_num = %d, stock_sell_num = %d, stock_buy_succ_num = %d' % (max_stock_buy_num,
+                                                                                max_stock_sell_num,
+                                                                                max_stock_buy_succ_num))
+    print('gain_ratio = %.2f%%, succ_ratio = %.2f%%' % (max_gain_ratio, max_succ_ratio))
+    print('best_buy_ma_len = %d, best_sell_ma_len = %d, start = %s, end = %s' % (best_buy_ma_len, best_sell_ma_len,
+                                                                                 start,
+                                                                                 end))
+
+    print('deal list:')
+    buy_list_len = len(buy_list)
+    sell_list_len = len(sell_list)
+    for i in range(buy_list_len):
+        # print('BUY : date = %s, price = %.03f' % (buy_list[i].time, buy_list[i].price))
+        if i < sell_list_len:
+            # print('SELL: date = %s, price = %.03f' % (sell_list[i].time, sell_list[i].price))
+            pass
+
+
+########################################################################################################################
+# MACD交易公共函数
+########################################################################################################################
+# 计算当前EMA
+def calc_cur_ema(ema_len, last_ema, cur_close_price):
+    return last_ema + ((cur_close_price - last_ema) * 2 / (ema_len + 1))
 
 
 # MACD交易
@@ -250,74 +355,222 @@ def calc_get_sell_stock_cost(stock_code, sell_stock_num, stock_price):
 # DIFF = 今日EMA（12）- 今日EMA（26）
 # DEA（MACD）= 前一日DEA×8/10＋今日DIFF×2/10
 # BAR = 2×(DIFF－DEA)
-class CalcMACD(object):
-    def __init__(self, data):
-        self.EMA12_list = []
-        self.EMA26_list = []
-        self.DIFF_list = []
-        self.DEA_list = []
-        self.BAR_list = []
-        self.calc_EMA12_list(data)
-        self.calc_EMA26_list(data)
-        self.calc_DIFF_list()
-        self.calc_DEA_list()
-        self.calc_BAR_list()
+########################################################################################################################
+# MACD标准算法交易策略，按金叉死叉买入卖出
+# 1.DIFF向上突破DEA，买入信号。
+# 2.DIFF向下跌破DEA，卖出信号。
+# 3.DEA线与K线发生背离，行情反转信号。
+########################################################################################################################
+class MACDStandardTradeStrategy(BaseTradeStrategy):
+    def __init__(self, stock_raw_data_obj, init_money):
+        BaseTradeStrategy.__init__(self, stock_raw_data_obj, init_money)
+        self.ema12_list = []
+        self.ema26_list = []
+        self.diff_list = []
+        self.dea_list = []
+        self.bar_list = []
 
-    # 计算当前EMA值
-    def calc_cur_EMA(self, data, EMA_len, last_EMA, cur_close_price):
-        return last_EMA + ((cur_close_price - last_EMA) * 2 / (EMA_len + 1))
+        self.calc_ema12_list()
+        self.calc_ema26_list()
+        self.calc_diff_list()
+        self.calc_dea_list()
+        self.calc_bar_list()
 
     # 计算EMA12列表
-    def calc_EMA12_list(self, data):
-        self.EMA12_list.clear()
-        data_len = len(data)
+    def calc_ema12_list(self):
+        self.ema12_list.clear()
+        data_len = len(self.data)
         if 0 >= data_len:
             return
-        self.EMA12_list.append(TimePriceItem(get_data_time(data, 0), get_data_price(data, 0, COL_CLOSE)))    # 按前一日收盘价计算, 要改
+        # 按前一日收盘价计算, 要改
+        self.ema12_list.append(TimePriceItem(get_data_time(self.data, 0), get_data_price(self.data, 0, COL_CLOSE)))
         for i in range(1, data_len):
-            last_EMA12 = self.EMA12_list[i-1].price
-            cur_EMA12 = self.calc_cur_EMA(data, 12, last_EMA12, get_data_price(data, i, COL_CLOSE))
-            self.EMA12_list.append(TimePriceItem(get_data_time(data, i), cur_EMA12))
+            last_ema12 = self.ema12_list[i-1].price
+            cur_ema12 = calc_cur_ema(12, last_ema12, get_data_price(self.data, i, COL_CLOSE))
+            self.ema12_list.append(TimePriceItem(get_data_time(self.data, i), cur_ema12))
 
-    def calc_EMA26_list(self, data):
-        self.EMA26_list.clear()
-        data_len = len(data)
+    def calc_ema26_list(self):
+        self.ema26_list.clear()
+        data_len = len(self.data)
         if 0 >= data_len:
             return
-        self.EMA26_list.append(TimePriceItem(get_data_time(data, 0), get_data_price(data, 0, COL_CLOSE)))   # 按前一日收盘价计算, 要改
+        # 按前一日收盘价计算, 要改
+        self.ema26_list.append(TimePriceItem(get_data_time(self.data, 0), get_data_price(self.data, 0, COL_CLOSE)))
         for i in range(1, data_len):
-            last_EMA26 = self.EMA26_list[i-1].price
-            cur_EMA26 = self.calc_cur_EMA(data, 26, last_EMA26, get_data_price(data, i, COL_CLOSE))
-            self.EMA26_list.append(TimePriceItem(get_data_time(data, i), cur_EMA26))
+            last_ema26 = self.ema26_list[i-1].price
+            cur_ema26 = calc_cur_ema(26, last_ema26, get_data_price(self.data, i, COL_CLOSE))
+            self.ema26_list.append(TimePriceItem(get_data_time(self.data, i), cur_ema26))
 
-    def calc_DIFF_list(self):
-        list_len = len(self.EMA12_list)
+    def calc_diff_list(self):
+        list_len = len(self.ema12_list)
         for i in range(list_len):
-            self.DIFF_list.append(TimePriceItem(self.EMA12_list[i].time, self.EMA12_list[i].price - self.EMA26_list[i].price))
+            self.diff_list.append(TimePriceItem(self.ema12_list[i].time,
+                                                self.ema12_list[i].price - self.ema26_list[i].price))
 
-    def calc_DEA_list(self):
-        list_len = len(self.DIFF_list)
+    def calc_dea_list(self):
+        list_len = len(self.diff_list)
         if 0 >= list_len:
             return
-        self.DEA_list.append(TimePriceItem(self.DIFF_list[0].time, 0.000))
+        self.dea_list.append(TimePriceItem(self.diff_list[0].time, 0.000))
         for i in range(1, list_len):
-            last_DEA = self.DEA_list[i-1].price
-            cur_DEA = last_DEA*8/10 + self.DIFF_list[i].price*2/10
-            self.DEA_list.append(TimePriceItem(self.DIFF_list[i].time, cur_DEA))
+            last_dea = self.dea_list[i-1].price
+            cur_dea = last_dea*8/10 + self.diff_list[i].price*2/10
+            self.dea_list.append(TimePriceItem(self.diff_list[i].time, cur_dea))
 
-    def calc_BAR_list(self):
-        list_len = len(self.DIFF_list)
+    def calc_bar_list(self):
+        list_len = len(self.diff_list)
         for i in range(list_len):
-            self.BAR_list.append(TimePriceItem(self.DIFF_list[i].time, 2*(self.DIFF_list[i].price - self.DEA_list[i].price)))
+            self.bar_list.append(TimePriceItem(self.diff_list[i].time,
+                                               2*(self.diff_list[i].price - self.dea_list[i].price)))
 
-    def print_MACD(self):
-        for i in range(len(self.EMA12_list)):
-            print("%s %0.3f %0.3f %0.3f %0.3f %0.3f" % (self.EMA12_list[i].time, self.EMA12_list[i].price,
-                                                        self.EMA26_list[i].price, self.DIFF_list[i].price,
-                                                        self.DEA_list[i].price, self.BAR_list[i].price))
+    def print_macd(self):
+        for i in range(len(self.ema12_list)):
+            print("%s %0.3f %0.3f %0.3f %0.3f %0.3f" % (self.ema12_list[i].time, self.ema12_list[i].price,
+                                                        self.ema26_list[i].price, self.diff_list[i].price,
+                                                        self.dea_list[i].price, self.bar_list[i].price))
+
+    def run_trade_strategy(self):
+        # diff_list和sell_ma_list时一样的长度
+        diff_list_len = len(self.diff_list)
+        dea_list_len = len(self.dea_list)
+        if (0 >= self.money) or (0 >= diff_list_len) or (0 >= dea_list_len) or (diff_list_len != dea_list_len):
+            print('error ma list len %d or init money %0.3f' % (diff_list_len, self.money))
+            return
+
+        # 按MA均线判断收益率
+        for i in range(diff_list_len):
+            j = i - 1
+            if 0 <= j:
+                # 趋势向上买入股票, DIFF向上穿过DEA
+                if (self.diff_list[i].price > self.diff_list[j].price) \
+                        and (self.diff_list[i].price > self.dea_list[i].price):
+                    # 买入股票
+                    self.buy_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
+                # 趋势向下卖出股票, DIFF向下穿过DEA
+                if (self.diff_list[i].price < self.diff_list[j].price) \
+                        and (self.diff_list[i].price < self.dea_list[i].price):
+                        # 卖出股票
+                        self.sell_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
+
+        print(' ', end='\n')
+        print('MACDStandardTradeStrategy: ')
+        self.print_gain_ratio(diff_list_len)
 
 
+########################################################################################################################
+# MACD Diff算法交易策略，DIFF向上就买入, DIFF向下就卖出
+########################################################################################################################
+class MACDDiffTradeStrategy(MACDStandardTradeStrategy):
+    def __init__(self, stock_raw_data_obj, init_money):
+        MACDStandardTradeStrategy.__init__(self, stock_raw_data_obj, init_money)
 
+    def run_trade_strategy(self):
+        # diff_list和sell_ma_list时一样的长度
+        diff_list_len = len(self.diff_list)
+        if (0 >= self.money) or (0 >= diff_list_len):
+            print('error ma list len %d or init money %0.3f' % (diff_list_len, self.money))
+            return
+
+        # 按DIFF均线判断收益率
+        for i in range(diff_list_len):
+            j = i - 1
+            if 0 <= j:
+                # 趋势向上买入股票, DIFF向上穿过DEA
+                if self.diff_list[i].price > self.diff_list[j].price:
+                    # 买入股票
+                    self.buy_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
+                # 趋势向下卖出股票, DIFF向下穿过DEA
+                if self.diff_list[i].price < self.diff_list[j].price:
+                        # 卖出股票
+                        self.sell_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
+
+        print(' ', end='\n\n')
+        print('MACDDiffTradeStrategy: ')
+        self.print_gain_ratio(diff_list_len)
+
+
+########################################################################################################################
+# 计算最佳均线交易
+########################################################################################################################
+# 验证在不同均线趋势变化时买入卖出算法的正确性以及盈利值, 按1W RMB，按收盘价买入卖出，计算最优ma len
+def calc_best_macd_trade_strategy(stock_code, start, end, init_money):
+    # 初始化进度条
+    total = 2
+    progress = 0
+    widgets = ['Progress: ', pb.Percentage(), ' ', pb.Bar('#'), ' ', pb.Timer(), ' ', pb.ETA(), ' ']
+    pbar = pb.ProgressBar(widgets=widgets, maxval=total).start()
+    # 初始化股票数据
+    stock_raw_data_obj = GetStockRawData(stock_code, start, end)
+
+    # 画图列表
+    # price_list = []
+
+    # 计算标准MACD策略收益率
+    trade_strategy_obj = MACDStandardTradeStrategy(stock_raw_data_obj, init_money)
+    trade_strategy_obj.run_trade_strategy()
+    # 记录最大收益率
+    max_general_asset = trade_strategy_obj.general_asset
+    max_stock_code = trade_strategy_obj.stock_code
+    max_money = trade_strategy_obj.money
+    max_stock_num = trade_strategy_obj.stock_num
+    max_stock_buy_num = trade_strategy_obj.stock_buy_num
+    max_stock_sell_num = trade_strategy_obj.stock_sell_num
+    max_stock_buy_succ_num = trade_strategy_obj.stock_buy_succ_num
+    max_gain_ratio = trade_strategy_obj.gain_ratio
+    max_succ_ratio = trade_strategy_obj.succ_ratio
+    # price_list = trade_strategy_obj.price_list
+    buy_list = trade_strategy_obj.buy_list
+    sell_list = trade_strategy_obj.sell_list
+    # 删除对象释放内存
+    del trade_strategy_obj
+
+    # 更新进度
+    progress += 1
+    pbar.update(progress)
+
+    # 计算MACD DIFF策略收益率
+    trade_strategy_obj = MACDDiffTradeStrategy(stock_raw_data_obj, init_money)
+    trade_strategy_obj.run_trade_strategy()
+    # 记录最大收益率
+    if max_general_asset < trade_strategy_obj.general_asset:
+        max_general_asset = trade_strategy_obj.general_asset
+        max_stock_code = trade_strategy_obj.stock_code
+        max_money = trade_strategy_obj.money
+        max_stock_num = trade_strategy_obj.stock_num
+        max_stock_buy_num = trade_strategy_obj.stock_buy_num
+        max_stock_sell_num = trade_strategy_obj.stock_sell_num
+        max_stock_buy_succ_num = trade_strategy_obj.stock_buy_succ_num
+        max_gain_ratio = trade_strategy_obj.gain_ratio
+        max_succ_ratio = trade_strategy_obj.succ_ratio
+        # price_list = trade_strategy_obj.price_list
+        buy_list = trade_strategy_obj.buy_list
+        sell_list = trade_strategy_obj.sell_list
+    # 删除对象释放内存
+    del trade_strategy_obj
+
+    # 更新进度
+    progress += 1
+    pbar.update(progress)
+
+    # 删除对象
+    del pbar
+
+    print(' ', end='\n\n')
+    print('stock_code = %s' % max_stock_code)
+    print('money = %.3f, stork_num = %d, general_asset = %.3f' % (max_money, max_stock_num, max_general_asset))
+    print('stock_buy_num = %d, stock_sell_num = %d, stock_buy_succ_num = %d' % (max_stock_buy_num,
+                                                                                max_stock_sell_num,
+                                                                                max_stock_buy_succ_num))
+    print('gain_ratio = %.2f%%, succ_ratio = %.2f%%' % (max_gain_ratio, max_succ_ratio))
+
+    print('deal list:')
+    buy_list_len = len(buy_list)
+    sell_list_len = len(sell_list)
+    for i in range(buy_list_len):
+        # print('BUY : date = %s, price = %.03f' % (buy_list[i].time, buy_list[i].price))
+        if i < sell_list_len:
+            # print('SELL: date = %s, price = %.03f' % (sell_list[i].time, sell_list[i].price))
+            pass
 
 
 
