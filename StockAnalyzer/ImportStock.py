@@ -171,17 +171,17 @@ class BaseTradeStrategy(object):
     def print_gain_ratio(self, list_len):
         # 显示最终金额以及买入卖出数据,如果股票没有卖出要采用最后一天的价格来计算
         self.general_asset = self.money + self.stock_num * get_data_price(self.data, list_len - 1, COL_CLOSE)
-        print('money = %.3f, stork_num = %d, general_asset = %.3f' % (self.money, self.stock_num, self.general_asset))
-        print('stock_buy_num = %d, stock_sell_num = %d, stock_buy_succ_num = %d' % (self.stock_buy_num,
-                                                                                    self.stock_sell_num,
-                                                                                    self.stock_buy_succ_num))
+        # print('money = %.3f, stork_num = %d, general_asset = %.3f' % (self.money, self.stock_num, self.general_asset))
+        # print('stock_buy_num = %d, stock_sell_num = %d, stock_buy_succ_num = %d' % (self.stock_buy_num,
+        #                                                                            self.stock_sell_num,
+        #                                                                            self.stock_buy_succ_num))
         # 计算买卖成功率
         self.gain_ratio = (self.general_asset - self.init_money) / self.init_money * 100
         if 0 < self.stock_buy_num:
             self.succ_ratio = self.stock_buy_succ_num / self.stock_buy_num * 100
         else:
             self.succ_ratio = 0
-        print('gain_ratio = %.2f%%, succ_ratio = %.2f%%' % (self.gain_ratio, self.succ_ratio))
+        # print('gain_ratio = %.2f%%, succ_ratio = %.2f%%' % (self.gain_ratio, self.succ_ratio))
 
 
 ########################################################################################################################
@@ -251,8 +251,8 @@ class MATradeStrategy(BaseTradeStrategy):
                         # 卖出股票
                         self.sell_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
 
-        print(' ', end='\n')
-        print('MATradeStrategy: buy_ma_len = %d, sell_ma_len = %d' % (self.buy_ma_len, self.sell_ma_len))
+        # print(' ', end='\n')
+        # print('MATradeStrategy: buy_ma_len = %d, sell_ma_len = %d' % (self.buy_ma_len, self.sell_ma_len))
         self.print_gain_ratio(buy_ma_list_len)
 
 
@@ -331,7 +331,7 @@ def calc_best_ma_trade_strategy(stock_code, start, end, max_buy_ma_len, max_sell
     del pbar
 
     print(' ', end='\n')
-    print('stock_code = %s' % max_stock_code)
+    print('Best MATradeStrategy for stock_code = %s:' % max_stock_code)
     print('money = %.3f, stork_num = %d, general_asset = %.3f' % (max_money, max_stock_num, max_general_asset))
     print('stock_buy_num = %d, stock_sell_num = %d, stock_buy_succ_num = %d' % (max_stock_buy_num,
                                                                                 max_stock_sell_num,
@@ -466,8 +466,8 @@ class MACDStandardTradeStrategy(BaseTradeStrategy):
                         # 卖出股票
                         self.sell_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
 
-        print(' ', end='\n')
-        print('MACDStandardTradeStrategy: ')
+        # print(' ', end='\n')
+        # print('MACDStandardTradeStrategy: ')
         self.print_gain_ratio(diff_list_len)
 
 
@@ -498,8 +498,8 @@ class MACDDiffTradeStrategy(MACDStandardTradeStrategy):
                         # 卖出股票
                         self.sell_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
 
-        print(' ', end='\n\n')
-        print('MACDDiffTradeStrategy: ')
+        # print(' ', end='\n\n')
+        # print('MACDDiffTradeStrategy: ')
         self.print_gain_ratio(diff_list_len)
 
 
@@ -545,8 +545,11 @@ def calc_best_macd_trade_strategy(stock_code, start, end, init_money):
     # 计算MACD DIFF策略收益率
     trade_strategy_obj = MACDDiffTradeStrategy(stock_raw_data_obj, init_money)
     trade_strategy_obj.run_trade_strategy()
+    flag = 0
+
     # 记录最大收益率
     if max_general_asset < trade_strategy_obj.general_asset:
+        flag = 1
         max_general_asset = trade_strategy_obj.general_asset
         max_stock_code = trade_strategy_obj.stock_code
         max_money = trade_strategy_obj.money
@@ -570,7 +573,10 @@ def calc_best_macd_trade_strategy(stock_code, start, end, init_money):
     del pbar
 
     print(' ', end='\n\n')
-    print('stock_code = %s' % max_stock_code)
+    if 1 == flag:
+        print('MACDDiffTradeStrategy is the best, stock_code = %s' % max_stock_code)
+    else:
+        print('MACDStandardTradeStrategy is the best, stock_code = %s' % max_stock_code)
     print('money = %.3f, stork_num = %d, general_asset = %.3f' % (max_money, max_stock_num, max_general_asset))
     print('stock_buy_num = %d, stock_sell_num = %d, stock_buy_succ_num = %d' % (max_stock_buy_num,
                                                                                 max_stock_sell_num,
