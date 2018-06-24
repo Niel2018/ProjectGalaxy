@@ -1,16 +1,17 @@
-
 import sys
 sys.path.append(r'./StockAnalyzer')
 import ImportStock as Sa
 
-#import matplotlib.colorbar
-#import matplotlib.contour as contour
-#import matplotlib.font_manager as font_manager
-#from matplotlib import afm, cbook, ft2font, rcParams, get_cachedir
-import matplotlib.pyplot as plt
+# import matplotlib.colorbar
+# import matplotlib.contour as contour
+# import matplotlib.font_manager as font_manager
+# from matplotlib import afm, cbook, ft2font, rcParams, get_cachedir
+# import matplotlib.pyplot as plt
+
 
 # Test code here
 def main():
+
     '''
     # 600000
     # 早期长期下跌趋势
@@ -109,9 +110,14 @@ def main():
     # calc_best_ma_len(data, stock_code='600021', start='2017-01-01', end='2018-06-15')
     # del data
 
+    stock_list = ['600000', '601666', '600111', '000783', '002594', '300024', '600000', '600021', '300258']
+
     # 2008年10月31日到最近震荡趋势
-    # Sa.calc_best_ma_trade_strategy('600000', '2008-11-01', '2018-06-14', 20, 20, 10000)
-    Sa.calc_best_macd_trade_strategy('600000', '2008-11-01', '2018-06-14', 10000)
+    stock_list_len = len(stock_list)
+    for i in range(stock_list_len):
+        Sa.calc_best_ma_trade_strategy(stock_list[i], '2008-11-01', '2018-06-15', 31, 31, 10000)
+        Sa.calc_best_macd_trade_strategy(stock_list[i], '2008-11-01', '2018-06-15', 10000)
+
 
 main()
 

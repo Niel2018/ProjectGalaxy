@@ -114,7 +114,7 @@ class GetStockRawData(object):
 
 
 ########################################################################################################################
-# 交易策略
+# 交易策略基类
 ########################################################################################################################
 class BaseTradeStrategy(object):
     def __init__(self, stock_raw_data_obj, init_money):
@@ -194,7 +194,6 @@ class MATradeStrategy(BaseTradeStrategy):
         self.sell_ma_len = sell_ma_len  # 卖出时均线长度
         self.buy_ma_list = []           # 买入时均线价格列表, 用于计算和绘图
         self.sell_ma_list = []          # 卖出时均线价格列表, 用于计算和绘图
-
         # 获取买入卖出MA价格列表
         self.get_ma_list(self.buy_ma_list, self.buy_ma_len)
         self.get_ma_list(self.sell_ma_list, self.sell_ma_len)
@@ -255,6 +254,21 @@ class MATradeStrategy(BaseTradeStrategy):
         print(' ', end='\n')
         print('MATradeStrategy: buy_ma_len = %d, sell_ma_len = %d' % (self.buy_ma_len, self.sell_ma_len))
         self.print_gain_ratio(buy_ma_list_len)
+
+
+########################################################################################################################
+# 基于均线买卖的策略， 根据10、20、30上行还是下行动态调整买入和卖出的MA价格，待定。。。。。。
+########################################################################################################################
+class SmartMATradeStrategy(MATradeStrategy):
+    def __init__(self, stock_raw_data_obj, init_money, buy_ma_len=5, sell_ma_len=5):
+        MATradeStrategy.__init__(self, stock_raw_data_obj, init_money)
+        self.buy_ma_len = buy_ma_len    # 买入时均线长度
+        self.sell_ma_len = sell_ma_len  # 卖出时均线长度
+        self.buy_ma_list = []           # 买入时均线价格列表, 用于计算和绘图
+        self.sell_ma_list = []          # 卖出时均线价格列表, 用于计算和绘图
+        # 获取买入卖出MA价格列表
+        self.get_ma_list(self.buy_ma_list, self.buy_ma_len)
+        self.get_ma_list(self.sell_ma_list, self.sell_ma_len)
 
 
 ########################################################################################################################
