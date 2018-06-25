@@ -112,11 +112,11 @@ def main():
 
     stock_list = ['600000', '601666', '600111', '000783', '002594', '300024', '600000', '600021', '300258']
 
-    # 2008年10月31日到最近震荡趋势
+    # 2015年6月1日到最近震荡趋势
     stock_list_len = len(stock_list)
     for i in range(stock_list_len):
-        Sa.calc_best_ma_trade_strategy(stock_list[i], '2008-11-01', '2018-06-15', 31, 31, 10000)
-        Sa.calc_best_macd_trade_strategy(stock_list[i], '2008-11-01', '2018-06-15', 10000)
+        Sa.calc_best_ma_trade_strategy(stock_list[i], '2015-06-01', '2018-06-15', 31, 31, 10000)
+        Sa.calc_best_macd_trade_strategy(stock_list[i], '2015-06-01', '2018-06-15', 10000)
 
 
 main()
