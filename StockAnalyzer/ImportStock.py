@@ -37,8 +37,8 @@ def get_data_price(data, price_index, price_type):
 
 
 # 时间价格对
-def get_data_time_price_item(data, timeprice_index, price_type):
-    return TimePriceItem(get_data_time(data, timeprice_index), get_data_price(data, timeprice_index, price_type))
+def get_data_time_price_item(data, time_price_index, price_type):
+    return TimePriceItem(get_data_time(data, time_price_index), get_data_price(data, time_price_index, price_type))
 
 
 ########################################################################################################################
@@ -187,6 +187,48 @@ class BaseTradeStrategy(object):
 ########################################################################################################################
 # 基于均线买卖的策略
 ########################################################################################################################
+TRADE_PASS = 0
+TRADE_BUY = 1
+TRADE_SELL = 2
+
+
+# 根据买卖交易均线趋势判断该买还是卖，短期均线操作优先级高
+def ma_trade_judge(buy_ma_len, sell_ma_len, buy_ma_first_price, buy_ma_next_price, sell_ma_first_price,
+                   sell_ma_next_price):
+    # 买优先级高
+    if buy_ma_len < sell_ma_len:
+        # 短期均线向上买
+        if buy_ma_first_price < buy_ma_next_price:
+            return TRADE_BUY
+        else:
+            # 短期均线向下且长期均线向下卖
+            if sell_ma_first_price > sell_ma_next_price:
+                return TRADE_SELL
+            else:
+                # 短期均线向下而长期均线向上，不做操作
+                return TRADE_PASS
+    # 卖优先级高
+    if buy_ma_len > sell_ma_len:
+        # 短期均线向下卖
+        if sell_ma_first_price > sell_ma_next_price:
+            return TRADE_SELL
+        else:
+            # 短期均线向上且长期均线向上买
+            if buy_ma_first_price < buy_ma_next_price:
+                return TRADE_BUY
+            else:
+                # 短期均线向上且长期均线向下，不做操作
+                return TRADE_PASS
+    # 买卖优先级一样
+    if buy_ma_len == sell_ma_len:
+        if buy_ma_first_price < buy_ma_next_price:
+            return TRADE_BUY
+        elif buy_ma_first_price > buy_ma_next_price:
+            return TRADE_SELL
+        else:  # buy_ma_first_price == buy_ma_next_price:
+            return TRADE_PASS
+
+
 class MATradeStrategy(BaseTradeStrategy):
     def __init__(self, stock_raw_data_obj, init_money, buy_ma_len=5, sell_ma_len=5):
         BaseTradeStrategy.__init__(self, stock_raw_data_obj, init_money)
@@ -195,8 +237,10 @@ class MATradeStrategy(BaseTradeStrategy):
         self.buy_ma_list = []           # 买入时均线价格列表, 用于计算和绘图
         self.sell_ma_list = []          # 卖出时均线价格列表, 用于计算和绘图
         # 获取买入卖出MA价格列表
-        self.get_ma_list(self.buy_ma_list, self.buy_ma_len)
-        self.get_ma_list(self.sell_ma_list, self.sell_ma_len)
+        if 0 < self.buy_ma_len:
+            self.get_ma_list(self.buy_ma_list, self.buy_ma_len)
+        if 0 < self.sell_ma_len:
+            self.get_ma_list(self.sell_ma_list, self.sell_ma_len)
 
     # 计算某个价格对应的ma价格
     def calc_ma_price(self, price_index, ma_len):
@@ -233,23 +277,29 @@ class MATradeStrategy(BaseTradeStrategy):
         sell_ma_list_len = len(self.sell_ma_list)
         if (0 >= self.money) or (0 >= buy_ma_list_len) or (0 >= sell_ma_list_len) \
                 or (buy_ma_list_len != sell_ma_list_len):
-            print('error ma list len %d or init money %0.3f' % (buy_ma_list_len, self.money))
+            print('MATradeStrategy.run_trade_strategy error ma list len %d or init money %0.3f'
+                  % (buy_ma_list_len, self.money))
             return
 
         # 按MA均线判断收益率
         for i in range(buy_ma_list_len):
-            j = i - 1
-            if 0 <= j:
-                # 趋势向上买入股票
-                if (0 < self.buy_ma_list[i].price) and (0 < self.buy_ma_list[j].price):
-                    if self.buy_ma_list[i].price > self.buy_ma_list[j].price:
-                        # 买入股票
-                        self.buy_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
-                # 趋势向下卖出股票
-                if (0 < self.sell_ma_list[i].price) and (0 < self.sell_ma_list[j].price):
-                    if self.sell_ma_list[i].price < self.sell_ma_list[j].price:
-                        # 卖出股票
-                        self.sell_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
+            j = i + 1
+            if j < buy_ma_list_len:
+                if (0 >= self.buy_ma_list[i].price) or (0 >= self.buy_ma_list[j].price):
+                    continue
+                # 判断是买还是卖
+                ma_trade = ma_trade_judge(self.buy_ma_len, self.sell_ma_len, self.buy_ma_list[i].price,
+                                          self.buy_ma_list[j].price, self.sell_ma_list[i].price,
+                                          self.sell_ma_list[j].price)
+                if TRADE_BUY == ma_trade:
+                    # 买入股票
+                    self.buy_stock(get_data_time(self.data, j), get_data_price(self.data, j, COL_CLOSE))
+                elif TRADE_SELL == ma_trade:
+                    # 卖出股票
+                    self.sell_stock(get_data_time(self.data, j), get_data_price(self.data, j, COL_CLOSE))
+                else:
+                    # 不交易 TRASE_PASS == ma_trade
+                    pass
 
         # print(' ', end='\n')
         # print('MATradeStrategy: buy_ma_len = %d, sell_ma_len = %d' % (self.buy_ma_len, self.sell_ma_len))
@@ -269,36 +319,47 @@ class PhaseMaLenItem(object):
         self.phase_sell_ma_len = phase_sell_ma_len
 
 
+MA_DIR_INIT = 0
+MA_DIR_UP = 1
+MA_DIR_DOWN = 2
+
+
 class SmartMATradeStrategy(MATradeStrategy):
     def __init__(self, stock_raw_data_obj, init_money, max_long_ma_len):
-        MATradeStrategy.__init__(self, stock_raw_data_obj, init_money)
+        MATradeStrategy.__init__(self, stock_raw_data_obj, init_money, 0, 0)
         self.long_ma_list = []                      # 长期比较均线列表
         self.max_long_ma_len = max_long_ma_len      # 长期比较均线
         self.phase_index_ma_len_list = []           # 阶段和ma长度记录列表
 
     # 计算历史到当前阶段总收益
     def get_phase_general_asset(self, phase_start_index, phase_end_index, phase_buy_ma_len, phase_sell_ma_len):
+        self.buy_ma_list = []
+        self.sell_ma_list = []
         self.get_ma_list(self.buy_ma_list, phase_buy_ma_len)
         self.get_ma_list(self.sell_ma_list, phase_sell_ma_len)
         for i in range(phase_start_index, phase_end_index):
-            j = i - 1
-            if 0 <= j:
-                # 趋势向上买入股票
-                if (0 < self.buy_ma_list[i].price) and (0 < self.buy_ma_list[j].price):
-                    if self.buy_ma_list[i].price > self.buy_ma_list[j].price:
-                        # 买入股票
-                        self.buy_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
-                # 趋势向下卖出股票
-                if (0 < self.sell_ma_list[i].price) and (0 < self.sell_ma_list[j].price):
-                    if self.sell_ma_list[i].price < self.sell_ma_list[j].price:
-                        # 卖出股票
-                        self.sell_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
-
+            j = i + 1
+            if j <= phase_end_index:
+                if (0 >= self.buy_ma_list[i].price) or (0 >= self.buy_ma_list[j].price):
+                    continue
+                # 判断是买还是卖
+                ma_trade = ma_trade_judge(phase_buy_ma_len, phase_sell_ma_len, self.buy_ma_list[i].price,
+                                          self.buy_ma_list[j].price, self.sell_ma_list[i].price,
+                                          self.sell_ma_list[j].price)
+                if TRADE_BUY == ma_trade:
+                    # 买入股票
+                    self.buy_stock(get_data_time(self.data, j), get_data_price(self.data, j, COL_CLOSE))
+                elif TRADE_SELL == ma_trade:
+                    # 卖出股票
+                    self.sell_stock(get_data_time(self.data, j), get_data_price(self.data, j, COL_CLOSE))
+                else:
+                    # 不交易 TRADE_PASS == ma_trade
+                    pass
         # 计算阶段收益
-        return self.money + self.stock_num*get_data_price(self.data, phase_end_index-1, COL_CLOSE)
+        return self.money + self.stock_num*get_data_price(self.data, phase_end_index, COL_CLOSE)
 
     # 获取阶段最大的总收益
-    def get_max_phase_general_asset(self, phase_start_index, phase_end_index, long_ma_len):
+    def get_max_phase_general_asset(self, phase_start_index, phase_end_index, long_ma_len, ma_dir):
         max_phase_general_asset = 0
         max_phase_money = 0
         max_phase_stock_num = 0
@@ -314,41 +375,99 @@ class SmartMATradeStrategy(MATradeStrategy):
         best_phase_buy_ma_len = 0
         best_phase_sell_ma_len = 0
 
-        # 假设从index1到index2之间L上行，计算M<N的最佳收益率
-        for phase_buy_ma_len in range(1, long_ma_len):
-            for phase_sell_ma_len in range(1, phase_buy_ma_len):
-                # 保存操作前的初始金额和股票数以便回退操作
-                phase_money = self.money
-                phase_stock_num = self.stock_num
-                phase_stock_buy_num = self.stock_buy_num
-                phase_buy_list = self.buy_list.copy()
-                phase_stock_last_buy_time = self.stock_last_buy_time
-                phase_stock_last_buy_price = self.stock_last_buy_price
-                phase_stock_sell_num = self.stock_sell_num
-                phase_sell_list = self.sell_list.copy()
-                phase_stock_last_sell_time = self.stock_last_sell_time
-                phase_stock_last_sell_price = self.stock_last_sell_price
-                phase_stock_buy_succ_num = self.stock_buy_succ_num
-                # 获取阶段收益
-                phase_general_asset = self.get_phase_general_asset(phase_start_index, phase_end_index, phase_buy_ma_len,
-                                                                   phase_sell_ma_len)
-                if max_phase_general_asset < phase_general_asset:
-                    max_phase_general_asset = phase_general_asset
-                    # 记录money, stock_num以及阶段ma长度                                                                                            
-                    max_phase_money = self.money
-                    max_phase_stock_num = self.stock_num
-                    max_phase_stock_buy_num = self.stock_buy_num
-                    max_phase_buy_list = self.buy_list.copy()
-                    max_phase_stock_last_buy_time = self.stock_last_buy_time
-                    max_phase_stock_last_buy_price = self.stock_last_buy_price
-                    max_phase_stock_sell_num = self.stock_sell_num
-                    max_phase_sell_list = self.sell_list.copy()
-                    max_phase_stock_last_sell_time = self.stock_last_sell_time
-                    max_phase_stock_last_sell_price = self.stock_last_sell_price
-                    max_phase_stock_buy_succ_num = self.stock_buy_succ_num
-                    best_phase_buy_ma_len = phase_buy_ma_len
-                    best_phase_sell_ma_len = phase_sell_ma_len
-                else:
+        print(' ', end='\n')
+        print('phase_start_index = %d,phase_end_index = %d,long_ma_len = %d, ma_dir = %d'
+              % (phase_start_index, phase_end_index, long_ma_len, ma_dir))
+
+        # 假设长期均线L向上，买入均线M小于卖出均线N, 且L > N > M（快买慢卖）, 根据这个假设便利计算最高收益率对应的各均线值
+        if MA_DIR_UP == ma_dir:
+            # 遍历买入卖出均线组合
+            for phase_sell_ma_len in range(2, long_ma_len):
+                for phase_buy_ma_len in range(2, phase_sell_ma_len):
+                    # 保存操作前的初始金额和股票数以便回退操作
+                    phase_money = self.money
+                    phase_stock_num = self.stock_num
+                    phase_stock_buy_num = self.stock_buy_num
+                    phase_buy_list = self.buy_list.copy()
+                    phase_stock_last_buy_time = self.stock_last_buy_time
+                    phase_stock_last_buy_price = self.stock_last_buy_price
+                    phase_stock_sell_num = self.stock_sell_num
+                    phase_sell_list = self.sell_list.copy()
+                    phase_stock_last_sell_time = self.stock_last_sell_time
+                    phase_stock_last_sell_price = self.stock_last_sell_price
+                    phase_stock_buy_succ_num = self.stock_buy_succ_num
+                    # 获取阶段收益
+                    phase_general_asset = self.get_phase_general_asset(phase_start_index, phase_end_index,
+                                                                       phase_buy_ma_len, phase_sell_ma_len)
+                    # 记录最大总收益
+                    if max_phase_general_asset < phase_general_asset:
+                        max_phase_general_asset = phase_general_asset
+                        # 记录money, stock_num以及阶段ma长度
+                        max_phase_money = self.money
+                        max_phase_stock_num = self.stock_num
+                        max_phase_stock_buy_num = self.stock_buy_num
+                        max_phase_buy_list = self.buy_list.copy()
+                        max_phase_stock_last_buy_time = self.stock_last_buy_time
+                        max_phase_stock_last_buy_price = self.stock_last_buy_price
+                        max_phase_stock_sell_num = self.stock_sell_num
+                        max_phase_sell_list = self.sell_list.copy()
+                        max_phase_stock_last_sell_time = self.stock_last_sell_time
+                        max_phase_stock_last_sell_price = self.stock_last_sell_price
+                        max_phase_stock_buy_succ_num = self.stock_buy_succ_num
+                        best_phase_buy_ma_len = phase_buy_ma_len
+                        best_phase_sell_ma_len = phase_sell_ma_len
+
+                    # 回退到初始状态
+                    self.money = phase_money
+                    self.stock_num = phase_stock_num
+                    self.stock_buy_num = phase_stock_buy_num
+                    self.buy_list = phase_buy_list.copy()
+                    self.stock_last_buy_time = phase_stock_last_buy_time
+                    self.stock_last_buy_price = phase_stock_last_buy_price
+                    self.stock_sell_num = phase_stock_sell_num
+                    self.sell_list = phase_sell_list.copy()
+                    self.stock_last_sell_time = phase_stock_last_sell_time
+                    self.stock_last_sell_price = phase_stock_last_sell_price
+                    self.stock_buy_succ_num = phase_stock_buy_succ_num
+
+        # 假设长期均线L向下，买入均线M大于卖出均线N（慢买快卖）, 且L > M > N, 根据这个假设便利计算最高收益率对应的各均线值
+        else:  # MA_DIR_DOWN == ma_dir:
+            # 遍历买入卖出均线组合
+            for phase_buy_ma_len in range(2, long_ma_len):
+                for phase_sell_ma_len in range(2, phase_buy_ma_len):
+                    # 保存操作前的初始金额和股票数以便回退操作
+                    phase_money = self.money
+                    phase_stock_num = self.stock_num
+                    phase_stock_buy_num = self.stock_buy_num
+                    phase_buy_list = self.buy_list.copy()
+                    phase_stock_last_buy_time = self.stock_last_buy_time
+                    phase_stock_last_buy_price = self.stock_last_buy_price
+                    phase_stock_sell_num = self.stock_sell_num
+                    phase_sell_list = self.sell_list.copy()
+                    phase_stock_last_sell_time = self.stock_last_sell_time
+                    phase_stock_last_sell_price = self.stock_last_sell_price
+                    phase_stock_buy_succ_num = self.stock_buy_succ_num
+                    # 获取阶段收益
+                    phase_general_asset = self.get_phase_general_asset(phase_start_index, phase_end_index,
+                                                                       phase_buy_ma_len, phase_sell_ma_len)
+                    # 记录最大总收益
+                    if max_phase_general_asset < phase_general_asset:
+                        max_phase_general_asset = phase_general_asset
+                        # 记录money, stock_num以及阶段ma长度
+                        max_phase_money = self.money
+                        max_phase_stock_num = self.stock_num
+                        max_phase_stock_buy_num = self.stock_buy_num
+                        max_phase_buy_list = self.buy_list.copy()
+                        max_phase_stock_last_buy_time = self.stock_last_buy_time
+                        max_phase_stock_last_buy_price = self.stock_last_buy_price
+                        max_phase_stock_sell_num = self.stock_sell_num
+                        max_phase_sell_list = self.sell_list.copy()
+                        max_phase_stock_last_sell_time = self.stock_last_sell_time
+                        max_phase_stock_last_sell_price = self.stock_last_sell_price
+                        max_phase_stock_buy_succ_num = self.stock_buy_succ_num
+                        best_phase_buy_ma_len = phase_buy_ma_len
+                        best_phase_sell_ma_len = phase_sell_ma_len
+
                     # 回退到初始状态
                     self.money = phase_money
                     self.stock_num = phase_stock_num
@@ -382,27 +501,40 @@ class SmartMATradeStrategy(MATradeStrategy):
             print('error init money %0.3f' % self.money)
             return
 
-        # 按MA均线判断收益率, 从3开始计算
-        dir_up = True    # True 代表上升  False代表下降
-        phase_start_index = 0
-        for long_ma_len in range(3, self.max_long_ma_len+1):
+        # 按MA均线判断收益率, 从10天均线开始计算
+        for long_ma_len in range(10, self.max_long_ma_len+1):
+            self.long_ma_list = []
             self.get_ma_list(self.long_ma_list, long_ma_len)
-
+            ma_dir = MA_DIR_INIT  # 0 初始化 1 代表上升  2代表下降
+            phase_start_index = 0
             # 计算转折点阶段总收益
             long_ma_list_len = len(self.long_ma_list)
             for i in range(long_ma_list_len):
-                j = i - 1
-                if 0 >= j:
+                j = i + 1
+                if j < long_ma_list_len:
+                    if MA_DIR_INIT == ma_dir:
+                        if self.long_ma_list[i].price == self.long_ma_list[j].price:
+                            continue
+                        elif self.long_ma_list[i].price < self.long_ma_list[j].price:
+                            ma_dir = MA_DIR_UP
+                        else:
+                            ma_dir = MA_DIR_DOWN
                     # 上升转下降 或者 下降转上升 情况下要计算阶段总收益
-                    if ((self.long_ma_list[i].price < self.long_ma_list[j].price) and (True is dir_up)) \
-                            or ((self.long_ma_list[i].price > self.long_ma_list[j].price) and (False is dir_up)):
+                    if ((self.long_ma_list[i].price > self.long_ma_list[j].price) and (MA_DIR_UP == ma_dir)) \
+                            or ((self.long_ma_list[i].price < self.long_ma_list[j].price) and (MA_DIR_DOWN == ma_dir)):
                         # 计算上一段的总收益
-                        self.get_max_phase_general_asset(phase_start_index, i, long_ma_len)
-                        phase_start_index = i
-                        # 更改表示
-                        dir_up = not dir_up
+                        self.get_max_phase_general_asset(phase_start_index, j, long_ma_len, ma_dir)
+                        phase_start_index = j
+                        # 更改方向
+                        if MA_DIR_UP == ma_dir:
+                            ma_dir = MA_DIR_DOWN
+                        else:
+                            ma_dir = MA_DIR_UP
                     else:   # 非转折不计算
-                        pass
+                        continue
+            # 计算最后一段
+            if phase_start_index < (long_ma_list_len - 1):
+                self.get_max_phase_general_asset(phase_start_index, long_ma_list_len - 1, long_ma_len, ma_dir)
 
         print(' ', end='\n')
         for i in range(len(self.phase_index_ma_len_list)):
@@ -450,6 +582,7 @@ def calc_best_ma_trade_strategy(stock_code, start, end, max_buy_ma_len, max_sell
     buy_list = []
     sell_list = []
 
+    '''
     for i in range(1, max_buy_ma_len):
         for j in range(1, max_sell_ma_len):
             trade_strategy_obj = MATradeStrategy(stock_raw_data_obj, init_money, i, j)
@@ -474,9 +607,10 @@ def calc_best_ma_trade_strategy(stock_code, start, end, max_buy_ma_len, max_sell
             pbar.update(progress)
             # 删除对象释放内存
             del trade_strategy_obj
+    '''
 
     # 计算smart ma
-    trade_strategy_obj = SmartMATradeStrategy(stock_raw_data_obj, init_money, max_buy_ma_len*2)
+    trade_strategy_obj = SmartMATradeStrategy(stock_raw_data_obj, init_money, max_buy_ma_len)
     trade_strategy_obj.run_trade_strategy()
     if max_general_asset < trade_strategy_obj.general_asset:
         max_stock_code = trade_strategy_obj.stock_code
@@ -617,23 +751,24 @@ class MACDStandardTradeStrategy(BaseTradeStrategy):
         diff_list_len = len(self.diff_list)
         dea_list_len = len(self.dea_list)
         if (0 >= self.money) or (0 >= diff_list_len) or (0 >= dea_list_len) or (diff_list_len != dea_list_len):
-            print('error ma list len %d or init money %0.3f' % (diff_list_len, self.money))
+            print('MACDStandardTradeStrategy.run_trade_strategy error ma list len %d or init money %0.3f'
+                  % (diff_list_len, self.money))
             return
 
         # 按MA均线判断收益率
         for i in range(diff_list_len):
-            j = i - 1
-            if 0 <= j:
+            j = i + 1
+            if j < diff_list_len:
                 # 趋势向上买入股票, DIFF向上穿过DEA
-                if (self.diff_list[i].price > self.diff_list[j].price) \
-                        and (self.diff_list[i].price > self.dea_list[i].price):
-                    # 买入股票
-                    self.buy_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
-                # 趋势向下卖出股票, DIFF向下穿过DEA
                 if (self.diff_list[i].price < self.diff_list[j].price) \
-                        and (self.diff_list[i].price < self.dea_list[i].price):
-                        # 卖出股票
-                        self.sell_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
+                        and (self.diff_list[j].price > self.dea_list[j].price):
+                    # 买入股票
+                    self.buy_stock(get_data_time(self.data, j), get_data_price(self.data, j, COL_CLOSE))
+                # 趋势向下卖出股票, DIFF向下穿过DEA
+                if (self.diff_list[i].price > self.diff_list[j].price) \
+                        and (self.diff_list[j].price < self.dea_list[j].price):
+                    # 卖出股票
+                    self.sell_stock(get_data_time(self.data, j), get_data_price(self.data, j, COL_CLOSE))
 
         # print(' ', end='\n')
         # print('MACDStandardTradeStrategy: ')
@@ -651,21 +786,22 @@ class MACDDiffTradeStrategy(MACDStandardTradeStrategy):
         # diff_list和sell_ma_list时一样的长度
         diff_list_len = len(self.diff_list)
         if (0 >= self.money) or (0 >= diff_list_len):
-            print('error ma list len %d or init money %0.3f' % (diff_list_len, self.money))
+            print('MACDDiffTradeStrategy.run_trade_strategy error ma list len %d or init money %0.3f'
+                  % (diff_list_len, self.money))
             return
 
         # 按DIFF均线判断收益率
         for i in range(diff_list_len):
-            j = i - 1
-            if 0 <= j:
+            j = i + 1
+            if j < diff_list_len:
                 # 趋势向上买入股票, DIFF向上穿过DEA
-                if self.diff_list[i].price > self.diff_list[j].price:
-                    # 买入股票
-                    self.buy_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
-                # 趋势向下卖出股票, DIFF向下穿过DEA
                 if self.diff_list[i].price < self.diff_list[j].price:
-                        # 卖出股票
-                        self.sell_stock(get_data_time(self.data, i), get_data_price(self.data, i, COL_CLOSE))
+                    # 买入股票
+                    self.buy_stock(get_data_time(self.data, j), get_data_price(self.data, j, COL_CLOSE))
+                # 趋势向下卖出股票, DIFF向下穿过DEA
+                if self.diff_list[i].price > self.diff_list[j].price:
+                    # 卖出股票
+                    self.sell_stock(get_data_time(self.data, j), get_data_price(self.data, j, COL_CLOSE))
 
         # print(' ', end='\n\n')
         # print('MACDDiffTradeStrategy: ')
