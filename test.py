@@ -116,9 +116,8 @@ def main():
     # 2015年6月1日到最近震荡趋势
     stock_list_len = len(stock_list)
     for i in range(stock_list_len):
-        Sa.calc_best_ma_trade_strategy(stock_list[i], '2015-06-01', '2018-06-15', 30, 30, 10000)
-        # Sa.calc_best_macd_trade_strategy(stock_list[i], '2015-06-01', '2018-06-15', 10000)
-
+        Sa.calc_best_ma_trade_strategy(stock_list[i], '2015-06-01', '2018-06-15', 10, 10, 10000)
+        Sa.calc_best_macd_trade_strategy(stock_list[i], '2015-06-01', '2018-06-15', 10000)
 
 
 main()
