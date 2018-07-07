@@ -2,12 +2,6 @@ import sys
 sys.path.append(r'./StockAnalyzer')
 import ImportStock as Sa
 
-# import matplotlib.colorbar
-# import matplotlib.contour as contour
-# import matplotlib.font_manager as font_manager
-# from matplotlib import afm, cbook, ft2font, rcParams, get_cachedir
-# import matplotlib.pyplot as plt
-
 
 # Test code here
 def main():
@@ -15,18 +9,8 @@ def main():
     '''
     # 600000
     # 早期长期下跌趋势
-    data = ts.get_k_data('600000', start='1990-01-01', end='2005-05-31')
     calc_best_ma_len(data, stock_code='600000', start='1990-01-01', end='2005-05-31')
     del data
-
-    global ma_list
-    global price_list
-    global buy_list
-    global sell_list
-    plt.figure(1)
-    # plt.plot(ma_list,)
-    plt.ylabel('date')
-    plt.ylabel('price')
 
     # 2008年前单上行趋势
     data = ts.get_k_data('600000', start='2005-06-01', end='2008-01-15')
@@ -113,11 +97,10 @@ def main():
     # stock_list = ['600000', '601666', '600111', '000783', '002594', '300024', '600000', '600021', '300258']
     stock_list = ['600000']
 
-    # 2015年6月1日到最近震荡趋势
     stock_list_len = len(stock_list)
     for i in range(stock_list_len):
-        Sa.calc_best_ma_trade_strategy(stock_list[i], '2015-06-01', '2018-06-15', 10, 10, 10000)
-        Sa.calc_best_macd_trade_strategy(stock_list[i], '2015-06-01', '2018-06-15', 10000)
+        Sa.calc_best_ma_trade_strategy(stock_list[i], '2005-01-01', '2008-10-30', 15, 15, 10000)
+        # Sa.calc_best_macd_trade_strategy(stock_list[i], '2005-06-01', '2008-10-30', 10000)
 
 
 main()

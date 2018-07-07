@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4be2c822-c6e8-4ed3-883a-4df67f4e63f8" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/PrjOnGoogleCloud.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PrjOnGoogleCloud.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StockAnalyzer/ImportStock.py" beforeDir="false" afterPath="$PROJECT_DIR$/StockAnalyzer/ImportStock.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
@@ -16,15 +18,15 @@
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/PrjOnGoogleCloud$test.coverage" NAME="test Coverage Results" MODIFIED="1529229413120" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/PrjOnGoogleCloud$ImportStock.coverage" NAME="ImportStock Coverage Results" MODIFIED="1529228618348" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/StockAnalyzer" />
-    <SUITE FILE_PATH="coverage/ProjectGalaxy$test.coverage" NAME="test Coverage Results" MODIFIED="1530497795858" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ProjectGalaxy$test.coverage" NAME="test Coverage Results" MODIFIED="1530935056804" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file leaf-file-name="test.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="261">
-              <caret line="117" column="35" lean-forward="true" selection-start-line="117" selection-start-column="35" selection-end-line="117" selection-end-column="35" />
+            <state relative-caret-position="62">
+              <caret line="87" column="7" lean-forward="true" selection-start-line="87" selection-start-column="7" selection-end-line="87" selection-end-column="7" />
             </state>
           </provider>
         </entry>
@@ -32,8 +34,8 @@
       <file leaf-file-name="ImportStock.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/StockAnalyzer/ImportStock.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="352">
-              <caret line="605" column="25" lean-forward="true" selection-start-line="605" selection-start-column="25" selection-end-line="605" selection-end-column="25" />
+            <state relative-caret-position="206">
+              <caret line="388" column="29" lean-forward="true" selection-start-line="388" selection-start-column="29" selection-end-line="388" selection-end-column="29" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -50,6 +52,7 @@
       <find>buy_stock</find>
       <find>calc_best_ma_trade_strategy</find>
       <find>print_gain_ratio</find>
+      <find>GetStockRawData</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -102,6 +105,13 @@
               <item name="StockAnalyzer" type="462c0819:PsiDirectoryNode" />
               <item name="ImportStock.py" type="8704e2dd:PyFileNode" />
             </path>
+            <path>
+              <item name="ProjectGalaxy" type="b2602c69:ProjectViewProjectNode" />
+              <item name="ProjectGalaxy" type="462c0819:PsiDirectoryNode" />
+              <item name="StockAnalyzer" type="462c0819:PsiDirectoryNode" />
+              <item name="ImportStock.py" type="8704e2dd:PyFileNode" />
+              <item name="MATradeStrategy" type="dd8bbb05:PyElementNode" />
+            </path>
           </expand>
           <select />
         </subPane>
@@ -110,13 +120,13 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="SearchEverywhereHistoryKey" value="print_gain_ratio&#9;null&#9;null&#10;gain_ratio&#9;null&#9;null&#10;calc_best_ma_trade_strategy&#9;null&#9;null&#10;get_max_phase_general_asset&#9;null&#9;null&#10;buy_stock&#9;null&#9;null&#10;get_phase_general_asset&#9;null&#9;null" />
+    <property name="SearchEverywhereHistoryKey" value="print_data&#9;null&#9;null&#10;GetStockRawData&#9;null&#9;null&#10;calc_best_ma_trade_strategy&#9;null&#9;null&#10;print_gain_ratio&#9;null&#9;null&#10;gain_ratio&#9;null&#9;null&#10;get_max_phase_general_asset&#9;null&#9;null&#10;buy_stock&#9;null&#9;null&#10;get_phase_general_asset&#9;null&#9;null" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/localvenv" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
-    <property name="settings.editor.selected.configurable" value="vcs.Git" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -247,7 +257,14 @@
       <option name="project" value="LOCAL" />
       <updated>1530424216424</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="modify SmartMAStrategy errors">
+      <created>1530498162374</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1530498162374</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -255,22 +272,22 @@
     <editor active="true" />
     <layout>
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.19253294" side_tool="true" visible="true" weight="0.3535032" />
+      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.46412885" side_tool="true" weight="0.4713376" />
       <window_info anchor="bottom" id="Database Changes" order="7" show_stripe_button="false" />
-      <window_info anchor="bottom" id="File Transfer" order="7" sideWeight="0.4956076" weight="0.3280255" />
+      <window_info anchor="bottom" id="File Transfer" order="7" sideWeight="0.49487555" weight="0.3280255" />
       <window_info anchor="bottom" id="Version Control" order="7" sideWeight="0.4978038" weight="0.3290938" />
       <window_info anchor="bottom" id="Python Console" order="7" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49926794" weight="0.32961783" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.53587115" weight="0.32484075" />
       <window_info anchor="bottom" id="Terminal" order="7" />
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.17642753" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.3455344" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Inspection Results" order="8" sideWeight="0.5285505" weight="0.32961783" />
+      <window_info anchor="bottom" id="Inspection Results" order="8" sideWeight="0.53147876" weight="0.32961783" />
       <window_info anchor="right" id="Database" order="3" />
       <window_info anchor="bottom" id="Find" order="1" sideWeight="0.49926794" weight="0.32961783" />
-      <window_info anchor="right" id="SciView" order="3" />
+      <window_info anchor="right" id="SciView" order="3" weight="0.670571" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
-      <window_info active="true" anchor="bottom" id="Debug" order="3" sideWeight="0.80746704" visible="true" weight="0.3535032" />
+      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.795754" visible="true" weight="0.29617834" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -296,6 +313,13 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/StockAnalyzer/ImportStock.py</url>
+          <line>379</line>
+          <option name="timeStamp" value="63" />
+        </line-breakpoint>
+      </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
           <properties notifyOnTerminate="true" exception="BaseException">
@@ -303,24 +327,27 @@
           </properties>
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="55" />
+      <option name="time" value="64" />
     </breakpoint-manager>
     <watches-manager>
       <configuration name="PythonConfigurationType">
-        <watch expression="phase_start_index" language="Python" />
-        <watch expression="j" language="Python" />
-        <watch expression="ma_dir" language="Python" />
-        <watch expression="self.money" language="Python" />
-        <watch expression="self.stock_num" language="Python" />
-        <watch expression="self.phase_index_ma_len_list" language="Python" />
-        <watch expression="self.stock_buy_num" language="Python" />
-        <watch expression="self.gain_ratio" language="Python" />
-        <watch expression="self.stock_buy_succ_num" language="Python" />
+        <watch expression="x" language="Python" />
+        <watch expression="y" language="Python" />
       </configuration>
     </watches-manager>
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="watch">
+      <expression>
+        <expression-string>y</expression-string>
+        <language-id>Python</language-id>
+        <evaluation-mode>EXPRESSION</evaluation-mode>
+      </expression>
+      <expression>
+        <expression-string>x</expression-string>
+        <language-id>Python</language-id>
+        <evaluation-mode>EXPRESSION</evaluation-mode>
+      </expression>
       <expression>
         <expression-string>self.gain_ratio</expression-string>
         <language-id>Python</language-id>
@@ -361,19 +388,26 @@
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
-      <expression>
-        <expression-string>phase_start_index</expression-string>
-        <language-id>Python</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-      <expression>
-        <expression-string>self.buy_ma_list[j].price</expression-string>
-        <language-id>Python</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
     </expressions>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2014">
+          <caret line="106" column="19" lean-forward="true" selection-start-line="106" selection-start-column="19" selection-end-line="106" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/StockAnalyzer/ImportStock.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="10963">
+          <caret line="577" column="33" lean-forward="true" selection-start-line="577" selection-start-column="33" selection-end-line="577" selection-end-column="33" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/test.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2337">
@@ -511,15 +545,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="261">
-          <caret line="117" column="35" lean-forward="true" selection-start-line="117" selection-start-column="35" selection-end-line="117" selection-end-column="35" />
+        <state relative-caret-position="62">
+          <caret line="87" column="7" lean-forward="true" selection-start-line="87" selection-start-column="7" selection-end-line="87" selection-end-column="7" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/StockAnalyzer/ImportStock.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="352">
-          <caret line="605" column="25" lean-forward="true" selection-start-line="605" selection-start-column="25" selection-end-line="605" selection-end-column="25" />
+        <state relative-caret-position="206">
+          <caret line="388" column="29" lean-forward="true" selection-start-line="388" selection-start-column="29" selection-end-line="388" selection-end-column="29" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
           </folding>

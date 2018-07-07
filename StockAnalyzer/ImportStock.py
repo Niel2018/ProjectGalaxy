@@ -1,5 +1,8 @@
 import tushare as ts
 import progressbar as pb
+from datetime import datetime
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 
 
 ########################################################################################################################
@@ -135,6 +138,7 @@ class BaseTradeStrategy(object):
         self.general_asset = 0          # 资产总额, 现金+股票*当日收盘价
         self.succ_ratio = 0             # 买入成功率
         self.gain_ratio = 0             # 资产增值率
+        self.fig = None
 
     # 买入股票
     def buy_stock(self, intent_stock_buy_time, intent_stock_buy_price):
@@ -196,6 +200,56 @@ class BaseTradeStrategy(object):
                 pass
         '''
 
+########################################################################################################################
+# 绘制图形
+########################################################################################################################
+    def plot_trade_detail(self):
+        pass
+
+    def plot_trade(self):
+        x = []
+        y = []
+        data_len = len(self.data)
+        for i in range(data_len):
+            x.append(datetime.strptime(get_data_time(self.data, i), '%Y-%m-%d').date())
+            y.append(get_data_price(self.data, i, COL_CLOSE))
+
+        self.fig = plt.figure(figsize=(60, 20))  # 创建绘图对象
+        # 配置横坐标
+        # 横坐标格式为年月日
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        # 每日刻度从第1日到第31日，间隔为15日
+        plt.gca().xaxis.set_major_locator(mdates.DayLocator(bymonthday=range(1, 32), interval=15))
+        # 对于X - 轴上面的每个ticker标签都向右倾斜45度，这样标签不会重叠在一起便于查看
+        for label in plt.gca().xaxis.get_ticklabels():
+            label.set_rotation(0)
+        plt.plot(x, y, 'b-', linewidth=1)  # 在当前绘图对象绘图（X轴，Y轴，蓝色虚线，线宽度）
+        self.fig.autofmt_xdate()  # 自动旋转日期标记  plt.gcf().autofmt_xdate()
+        plt.xlabel('Date')  # X轴标签
+        plt.ylabel('Price')  # Y轴标签
+        plt.title(self.stock_code)  # 图标题
+
+        x_buy_list = []
+        y_buy_list = []
+        buy_list_len = len(self.buy_list)
+        for i in range(buy_list_len):
+            x_buy_list.append(self.buy_list[i].time)
+            y_buy_list.append(self.buy_list[i].price)
+        plt.scatter(x_buy_list, y_buy_list, s=10, c='r')
+
+        x_sell_list = []
+        y_sell_list = []
+        sell_list_len = len(self.sell_list)
+        for i in range(sell_list_len):
+            x_sell_list.append(self.sell_list[i].time)
+            y_sell_list.append(self.sell_list[i].price)
+        plt.scatter(x_sell_list, y_sell_list, s=10, c='g')
+
+        # 打印对象自己信息
+        self.plot_trade_detail()
+
+        plt.show()  # 显示图
+
 
 ########################################################################################################################
 # 基于均线买卖的策略
@@ -236,7 +290,7 @@ def ma_trade_judge(buy_ma_len, sell_ma_len, buy_ma_first_price, buy_ma_next_pric
     if buy_ma_len == sell_ma_len:
         if buy_ma_first_price < buy_ma_next_price:
             return TRADE_BUY
-        elif buy_ma_first_price > buy_ma_next_price:
+        elif sell_ma_first_price > sell_ma_next_price:
             return TRADE_SELL
         else:  # buy_ma_first_price == buy_ma_next_price:
             return TRADE_PASS
@@ -271,16 +325,19 @@ class MATradeStrategy(BaseTradeStrategy):
     # 获取MA价格列表
     def get_ma_list(self, ma_list, ma_len):
         # 生成均线列表
-        for i in range(len(self.data)):
+        data_len = len(self.data)
+        for i in range(data_len):
             ma_price = self.calc_ma_price(i, ma_len)
             # 加入均线列表中
             ma_list.append(TimePriceItem(get_data_time(self.data, i), ma_price))
 
     def print_ma_list(self):
-        for i in range(len(self.buy_ma_list)):
+        list_len = len(self.buy_ma_list)
+        for i in range(list_len):
             print('buy_ma_list')
             print('date = %s, ma_price = %.3f' % (self.buy_ma_list[i].time, self.buy_ma_list[i].price))
-        for i in range(len(self.sell_ma_list)):
+        list_len = len(self.sell_ma_list)
+        for i in range(list_len):
             print('sell_ma_list')
             print('date = %s, ma_price = %.3f' % (self.sell_ma_list[i].time, self.sell_ma_list[i].price))
 
@@ -316,6 +373,24 @@ class MATradeStrategy(BaseTradeStrategy):
                 else:
                     # 不交易 TRASE_PASS == ma_trade
                     pass
+        # 计算总资产
+        self.general_asset = self.money + self.stock_num*get_data_price(self.data, buy_ma_list_len-1, COL_CLOSE)
+
+    def plot_trade_detail(self):
+        if self.fig is not None:
+            x = []
+            data_len = len(self.buy_ma_list)
+            for i in range(data_len):
+                x.append(self.buy_ma_list[i].time)
+
+            y_buy_ma_list = []
+            y_sell_ma_list = []
+            for i in range(data_len):
+                y_buy_ma_list.append(self.buy_ma_list[i].price)
+                y_sell_ma_list.append(self.sell_ma_list[i].price)
+
+            plt.plot(x, y_buy_ma_list)
+            plt.plot(x, y_sell_ma_list)
 
 
 ########################################################################################################################
@@ -394,8 +469,8 @@ class SmartMATradeStrategy(MATradeStrategy):
         # 假设长期均线L向上，买入均线M小于卖出均线N, 且L > N > M（快买慢卖）, 根据这个假设便利计算最高收益率对应的各均线值
         if MA_DIR_UP == ma_dir:
             # 遍历买入卖出均线组合
-            for phase_sell_ma_len in range(2, long_ma_len):
-                for phase_buy_ma_len in range(2, phase_sell_ma_len):
+            for phase_sell_ma_len in range(1, long_ma_len):
+                for phase_buy_ma_len in range(1, phase_sell_ma_len):
                     # 保存操作前的初始金额和股票数以便回退操作
                     phase_money = self.money
                     phase_stock_num = self.stock_num
@@ -445,8 +520,8 @@ class SmartMATradeStrategy(MATradeStrategy):
         # 假设长期均线L向下，买入均线M大于卖出均线N（慢买快卖）, 且L > M > N, 根据这个假设便利计算最高收益率对应的各均线值
         else:  # MA_DIR_DOWN == ma_dir:
             # 遍历买入卖出均线组合
-            for phase_buy_ma_len in range(2, long_ma_len):
-                for phase_sell_ma_len in range(2, phase_buy_ma_len):
+            for phase_buy_ma_len in range(1, long_ma_len):
+                for phase_sell_ma_len in range(1, phase_buy_ma_len):
                     # 保存操作前的初始金额和股票数以便回退操作
                     phase_money = self.money
                     phase_stock_num = self.stock_num
@@ -570,11 +645,6 @@ def calc_best_ma_trade_strategy(stock_code, start, end, max_buy_ma_len, max_sell
     # 初始化股票数据
     stock_raw_data_obj = GetStockRawData(stock_code, start, end)
 
-    # 画图列表
-    # price_list = []
-    # buy_list = []
-    # sell_list = []
-
     max_trade_strategy_obj = None
     for i in range(1, max_buy_ma_len):
         for j in range(1, max_sell_ma_len):
@@ -596,18 +666,29 @@ def calc_best_ma_trade_strategy(stock_code, start, end, max_buy_ma_len, max_sell
     # 删除对象释放内存
     max_trade_strategy_obj.print_gain_ratio()
     max_trade_strategy_obj.print_trade_info()
+    max_trade_strategy_obj.plot_trade()
     del max_trade_strategy_obj
 
-    # 计算smart ma
+    '''
+    max_trade_strategy_obj = None
     trade_strategy_obj = SmartMATradeStrategy(stock_raw_data_obj, init_money, max_buy_ma_len)
     trade_strategy_obj.run_trade_strategy()
-    # 更新进度
-    progress += 1
-    pbar.update(progress)
+    if ((max_trade_strategy_obj is None) or
+            ((max_trade_strategy_obj is not None)
+             and (max_trade_strategy_obj.general_asset < trade_strategy_obj.general_asset))):
+        # 保存总资产最高的对象
+        del max_trade_strategy_obj
+        max_trade_strategy_obj = trade_strategy_obj
+    else:
+        # 删除对象释放内存
+        del trade_strategy_obj
+
     # 删除对象释放内存
-    trade_strategy_obj.print_gain_ratio()
-    trade_strategy_obj.print_phase_info()
-    del trade_strategy_obj
+    max_trade_strategy_obj.print_gain_ratio()
+    max_trade_strategy_obj.print_phase_info()
+    del max_trade_strategy_obj
+    '''
+
     # 最后释放pbar对象
     del pbar
 
