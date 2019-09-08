@@ -2,9 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4be2c822-c6e8-4ed3-883a-4df67f4e63f8" name="Default" comment="add stock plot">
-      <change afterPath="$PROJECT_DIR$/.idea/other.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -262,7 +260,7 @@
       <workItem from="1567430854481" duration="12875000" />
       <workItem from="1567446705542" duration="1224000" />
       <workItem from="1567933952467" duration="467000" />
-      <workItem from="1567934550799" duration="485000" />
+      <workItem from="1567934550799" duration="1726000" />
     </task>
     <task id="LOCAL-00001" summary="111">
       <created>1529536254992</created>
@@ -341,7 +339,14 @@
       <option name="project" value="LOCAL" />
       <updated>1567934321811</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="add stock plot">
+      <created>1567935279913</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1567935279913</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TodoView">
