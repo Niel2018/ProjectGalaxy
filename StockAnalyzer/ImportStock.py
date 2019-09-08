@@ -3,7 +3,11 @@ import progressbar as pb
 from datetime import datetime
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-
+import os
+import pandas
+import shutil
+import datetime
+import numpy as np
 
 ########################################################################################################################
 # 公共函数 定义 和 类
@@ -105,16 +109,151 @@ def calc_get_sell_stock_cost(stock_code, sell_stock_num, stock_price):
     return tax_fare + broker_commission + sh_transfer_fare
 
 
+STOCK_DATA_DIR = r"D:\stock_data"
+
+
+########################################################################################################################
+# 读取csv文件数据
+########################################################################################################################
+def get_local_data(stock_file):
+    local_data = pandas.read_csv(stock_file)
+    if local_data is not None:
+        # local_data强制数据转换
+        local_data[['date', 'volume', 'code']] = local_data[['date', 'volume', 'code']].astype(int)
+        local_data[['open', 'close', 'high', 'low']] = local_data[['open', 'close', 'high', 'low']].astype(
+            np.float32)
+    return local_data
+
 ########################################################################################################################
 # 获取、更新以及保存交易数据源类
 ########################################################################################################################
 class GetStockRawData(object):
-    def __init__(self, stock_code, start, end):
-        self.stock_code = stock_code  # 股票代码
-        self.start = start
-        self.end = end
-        self.data = ts.get_k_data(stock_code, start, end)
+    def __init__(self, stock_code, req_start_str, req_end_str):
+        # 入参检查，根据判断请求时间是否合法
+        # print("req_start_str = %s, req_end_str = %s" % (req_start_str, req_end_str))
+        try:
+            req_start_date = datetime.datetime.strptime(req_start_str, "%Y-%m-%d")
+            req_end_date = datetime.datetime.strptime(req_end_str, "%Y-%m-%d")
+        except ValueError as ee:
+            print('try Y-m-d failed, req_start_str = %s, req_end_str = %s' % (req_start_str, req_end_str))
+        finally:
+            try:
+                req_start_date = datetime.datetime.strptime(req_start_str, "%Y%m%d")
+                req_end_date = datetime.datetime.strptime(req_end_str, "%Y%m%d")
+            except ValueError as ee:
+                print('try Ymd failed, req_start_str = %s, req_end_str = %s' % (req_start_str, req_end_str))
+            finally:
+                self.data = None
 
+        req_start_date = int(req_start_date.strftime("%Y%m%d"))
+        req_end_date = int(req_end_date.strftime("%Y%m%d"))
+        if req_start_date > req_end_date:
+            print("date input error, begin date %d > end date %d" % (req_start_date, req_end_date))
+            self.data = None
+            return
+
+        self.stock_code = stock_code  # 股票代码
+        self.start_str = req_start_str
+        self.end_str = req_end_str
+
+        get_data_from_network = True
+        network_data = ts.get_k_data(stock_code, self.start_str, self.end_str)
+        if (network_data is None) or (len(network_data) == 0):
+            print("Get data from network failed or none trade date, please check")
+            get_data_from_network = False
+        else:
+            # network_data数据转换
+            for i in range(len(network_data)):
+                network_data.iloc[i, 0] = int(
+                    datetime.datetime.strptime(network_data.iloc[i, 0], '%Y-%m-%d').strftime('%Y%m%d'))
+            network_data[['date', 'volume', 'code']] = network_data[['date', 'volume', 'code']].astype(int)
+            network_data[['open', 'close', 'high', 'low']] = network_data[['open', 'close', 'high', 'low']].astype(
+                np.float32)
+
+        # 判断是否存在stock_code.csv，如果不存在就创建，如果存在则加载文件 tok
+        if os.path.exists(STOCK_DATA_DIR) is not True:
+            os.makedirs(STOCK_DATA_DIR)
+
+        # 文件不存在就创建文件 tok
+        stock_file = STOCK_DATA_DIR + '\\' + str(self.stock_code) + ".csv"
+        # 本地文件不存在，且网络故障，无法分析 tok
+        if (os.path.exists(stock_file) is not True) and (get_data_from_network is False):
+            print("No valid data to analyse, quit")
+            self.data = None
+            return
+        # 如果本地文件存在，网络故障的话直接使用本地数据分析
+        elif (os.path.exists(stock_file) is True) and (get_data_from_network is False):
+            print("Network failure, use local data to analyse, load file %s" % stock_file)
+            #  获取本地数据
+            local_data = get_local_data(stock_file)
+            #  根据请求的日期判断返回数据
+            local_start_date = int(local_data.iloc[0, 0])
+            local_end_date = int(local_data.iloc[len(local_data)-1, 0])
+            if local_start_date > local_end_date:
+                print("Error local data, local_start_date = %s, local_end_date = %s" % (local_start_date, local_end_date))
+                self.data = None
+                return
+
+            if (local_end_date < req_start_date) or (local_start_date > req_end_date):
+                print("Error req date, local_start_date = %d, local_end_date = %d, req_start_date = %d, req_end_date = %d"
+                      % (local_start_date, local_end_date, req_start_date, req_end_date))
+                self.data = None
+                return
+
+            # 根据请求时间和本地数据，判断能获取到的数据
+            rel_start_date = max(req_start_date, local_start_date)
+            rel_end_date = min(req_end_date, req_end_date)
+
+            begin_index = None
+            end_index = None
+            for i in range(len(local_data)):
+                if rel_start_date <= int(local_data.iloc[i, 0]):
+                    begin_index = i
+                    break
+            for i in range(begin_index, len(local_data)):
+                if rel_end_date <= int(local_data.iloc[i, 0]):
+                    end_index = i
+                    break
+            if end_index is None:
+                end_index = len(local_data) - 1
+
+            # 重新组织self.data
+            self.data = local_data.loc[begin_index: end_index].reset_index(drop=True)
+            return
+
+        # 如果网络正常且本地文件不存在，则使用网络数据分析，并保存本地文件  tok
+        elif (os.path.exists(stock_file) is not True) and (get_data_from_network is True):
+            print("Stock file %s is not exist, create %s, use network data to analyse" % (stock_file, stock_file))
+
+            network_data.to_csv(stock_file, sep=',', index=False)
+            self.data = network_data
+            return
+        # 如果网络正常且本地文件存在，则使用网络数据更新本地文件  tok
+        elif (os.path.exists(stock_file) is True) and (get_data_from_network is True):
+            print("Stock file %s is exist, update %s, use network data to analyse" % (stock_file, stock_file))
+            # 检查start end日期范围内的数据，如果不完整则补全，如果完整则检查数据是否有变化，如果有变化则备份原来文件并修改保存
+            local_data = get_local_data(stock_file)
+
+            # 判断读取本地文件是否失败
+            if (local_data is None) or (len(local_data) == 0):
+                print("Read file %s failed or %s is empty!!!" % (stock_file, stock_file))
+                #备份文件
+                shutil.copy(stock_file, stock_file + "_" + datetime.date.today().strftime("%y%m%d") + "_bak")
+                # 重新写入
+                network_data.to_csv(stock_file, index=False)
+                self.data = network_data
+            else:  # 获取本地文件成功
+                # local_data合并数据
+                local_data = local_data.append(network_data)
+                local_data.drop_duplicates(keep='first', inplace=True)
+                local_data = local_data.sort_values(by="date", ascending=True)
+                local_data.to_csv(stock_file, index=False)
+                self.data = local_data
+            return
+        else:
+            # 不应该走到这个分支
+            print("Invalid progress")
+            return
 
 ########################################################################################################################
 # 交易策略基类
@@ -666,10 +805,9 @@ def calc_best_ma_trade_strategy(stock_code, start, end, max_buy_ma_len, max_sell
     # 删除对象释放内存
     max_trade_strategy_obj.print_gain_ratio()
     max_trade_strategy_obj.print_trade_info()
-    max_trade_strategy_obj.plot_trade()
+    # max_trade_strategy_obj.plot_trade()
     del max_trade_strategy_obj
 
-    '''
     max_trade_strategy_obj = None
     trade_strategy_obj = SmartMATradeStrategy(stock_raw_data_obj, init_money, max_buy_ma_len)
     trade_strategy_obj.run_trade_strategy()
@@ -687,7 +825,6 @@ def calc_best_ma_trade_strategy(stock_code, start, end, max_buy_ma_len, max_sell
     max_trade_strategy_obj.print_gain_ratio()
     max_trade_strategy_obj.print_phase_info()
     del max_trade_strategy_obj
-    '''
 
     # 最后释放pbar对象
     del pbar

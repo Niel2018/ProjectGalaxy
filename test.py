@@ -1,106 +1,38 @@
+import tushare as ts
+import datetime
+import numpy as np
 import sys
 sys.path.append(r'./StockAnalyzer')
 import ImportStock as Sa
+import BaiduIndexCrawler as BIC
 
 
 # Test code here
 def main():
-
-    '''
-    # 600000
-    # 早期长期下跌趋势
-    calc_best_ma_len(data, stock_code='600000', start='1990-01-01', end='2005-05-31')
-    del data
-
-    # 2008年前单上行趋势
-    data = ts.get_k_data('600000', start='2005-06-01', end='2008-01-15')
-    calc_best_ma_len(data, stock_code='600000', start='2005-06-01', end='2008-01-15')
-    del data
-
-    # 2008年单下行趋势
-    data = ts.get_k_data('600000', start='2008-01-16', end='2008-10-31')
-    calc_best_ma_len(data, stock_code='600000', start='2008-01-16', end='2008-10-31')
-    del data
-
-    # 2007 2008 急速上升下降趋势
-    data = ts.get_k_data('600000', start='2005-06-01', end='2008-10-31')
-    calc_best_ma_len(data, stock_code='600000', start='2005-06-01', end='2008-10-31')
-    del data
-
-    # 2008年10月31日到最近震荡趋势
-    data = ts.get_k_data('600000', start='2008-11-1', end='2018-6-14')
-    calc_best_ma_len(data, stock_code='600000', start='2008-11-1', end='2018-6-14')
-    del data
-
-    ####################################################################################
-    # 600021
-    # 早期长期下跌趋势
-    data = ts.get_k_data('600021', start='1990-01-01', end='2014-09-30')
-    calc_best_ma_len(data, stock_code='600021', start='1990-01-01', end='2014-09-30')
-    del data
-
-    # 2015年前单上行趋势
-    data = ts.get_k_data('600021', start='2014-10-01', end='2015-05-30')
-    calc_best_ma_len(data, stock_code='600021', start='2014-10-01', end='2015-05-30')
-    del data
-
-    # 2015年单下行趋势
-    data = ts.get_k_data('600021', start='2015-05-30', end='2016-01-30')
-    calc_best_ma_len(data, stock_code='600021', start='2015-05-30', end='2016-01-30')
-    del data
-
-    # 2015急速上升下行趋势
-    data = ts.get_k_data('600021', start='2014-10-01', end='2016-01-30')
-    calc_best_ma_len(data, stock_code='600021', start='2014-10-01', end='2016-01-30')
-    del data
-
-    # 2015到最近震荡趋势
-    data = ts.get_k_data('600021', start='2016-02-01', end='2018-6-14')
-    calc_best_ma_len(data, stock_code='600021', start='2016-02-01', end='2018-6-14')
-    del data
-
-    ######################################################################################
-    # 000783
-    # 早期长期下跌趋势
-    data = ts.get_k_data('000783', start='1990-01-01', end='2006-06-30')
-    calc_best_ma_len(data, stock_code='000783', start='1990-01-01', end='2006-06-30')
-    del data
-
-    # 2008前单上行趋势
-    data = ts.get_k_data('000783', start='2006-07-01', end='2007-12-30')
-    calc_best_ma_len(data, stock_code='000783', start='2006-07-01', end='2007-12-30')
-    del data
-
-    # 2008单下行趋势
-    data = ts.get_k_data('000783', start='2008-01-01', end='2008-12-31')
-    calc_best_ma_len(data, stock_code='000783', start='2008-01-01', end='2008-12-31')
-    del data
-
-    # 2006 2008急速上升下降趋势
-    data = ts.get_k_data('000783', start='2006-07-01', end='2008-12-31')
-    calc_best_ma_len(data, stock_code='000783', start='2006-07-01', end='2008-12-31')
-    del data
-
-    # 2009 最近震荡趋势
-    data = ts.get_k_data('000783', start='2009-01-01', end='2018-6-14')
-    calc_best_ma_len(data, stock_code='000783', start='2009-01-01', end='2018-6-14')
-    del data
-    '''
-
-    # 2015到最近震荡趋势
-    # data = ts.get_k_data('002322', autype=None, start='2009-12-18', end='2009-12-21')
-    # a1 = Sa.CalcMACD(data)
-    # a1.print_MACD()
-    # calc_best_ma_len(data, stock_code='600021', start='2017-01-01', end='2018-06-15')
-    # del data
-
     # stock_list = ['600000', '601666', '600111', '000783', '002594', '300024', '600000', '600021', '300258']
-    stock_list = ['600000']
+    # stock_list = ['002594']
 
-    stock_list_len = len(stock_list)
-    for i in range(stock_list_len):
-        Sa.calc_best_ma_trade_strategy(stock_list[i], '2005-01-01', '2008-10-30', 15, 15, 10000)
-        # Sa.calc_best_macd_trade_strategy(stock_list[i], '2005-06-01', '2008-10-30', 10000)
+    # stock_list_len = len(stock_list)
+    #for i in range(stock_list_len):
+    #    Sa.calc_best_ma_trade_strategy(stock_list[i], '20170615', '20170730', 30, 30, 10000)
+    # Sa.calc_best_macd_trade_strategy(stock_list[i], '2018-06-30', '2019-07-05', 10000)
+
+    # BIC.GetBaiduIndex()
+    ts_pro = ts.pro_api('45dba9f72d4488e265fc980ea7b70f4416b529589d46afa55540894a')
+    stock_list = ts_pro.query('stock_basic', exchange='', list_status='L',
+                              fields='ts_code,symbol,name,area,industry,list_date')
+    for i in range(len(stock_list)):
+        stock_code = str(stock_list.iloc[i, 1])
+        stock_file = 'D:' + '\\stock_data\\' + stock_code + ".csv"
+        network_data = ts.get_k_data(stock_code, '1994-01-01')
+        # network_data数据转换
+        for j in range(len(network_data)):
+            network_data.iloc[j, 0] = int(
+                datetime.datetime.strptime(network_data.iloc[j, 0], '%Y-%m-%d').strftime('%Y%m%d'))
+        network_data[['date', 'volume', 'code']] = network_data[['date', 'volume', 'code']].astype(int)
+        network_data[['open', 'close', 'high', 'low']] = network_data[['open', 'close', 'high', 'low']].astype(
+            np.float32)
+        network_data.to_csv(stock_file, index=False)
 
 
 main()
