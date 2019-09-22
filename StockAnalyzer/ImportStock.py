@@ -1,6 +1,6 @@
 import tushare as ts
-#import progressbar as pb
-from tqdm import tqdm
+import progressbar as pb
+#from tqdm import tqdm
 from datetime import datetime
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -194,6 +194,8 @@ class GetStockRawData(object):
                 self.data = None
                 return
 
+            req_start_date = int(req_start_date)
+            req_end_date = int(req_end_date)
             if (local_end_date < req_start_date) or (local_start_date > req_end_date):
                 print("Error req date, local_start_date = %d, local_end_date = %d, req_start_date = %d, req_end_date = %d"
                       % (local_start_date, local_end_date, req_start_date, req_end_date))
