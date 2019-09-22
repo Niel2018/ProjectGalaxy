@@ -1,5 +1,6 @@
 import tushare as ts
-import progressbar as pb
+#import progressbar as pb
+from tqdm import tqdm
 from datetime import datetime
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -135,26 +136,25 @@ class GetStockRawData(object):
             req_start_date = datetime.datetime.strptime(req_start_str, "%Y-%m-%d")
             req_end_date = datetime.datetime.strptime(req_end_str, "%Y-%m-%d")
         except ValueError as ee:
-            print('try Y-m-d failed, req_start_str = %s, req_end_str = %s' % (req_start_str, req_end_str))
+            pass
+            # print('try Y-m-d failed, req_start_str = %s, req_end_str = %s' % (req_start_str, req_end_str))
         finally:
             try:
                 req_start_date = datetime.datetime.strptime(req_start_str, "%Y%m%d")
                 req_end_date = datetime.datetime.strptime(req_end_str, "%Y%m%d")
             except ValueError as ee:
-                print('try Ymd failed, req_start_str = %s, req_end_str = %s' % (req_start_str, req_end_str))
+                print('try Ymd and Y-m-d failed, req_start_str = %s, req_end_str = %s' % (req_start_str, req_end_str))
             finally:
                 self.data = None
 
-        req_start_date = int(req_start_date.strftime("%Y%m%d"))
-        req_end_date = int(req_end_date.strftime("%Y%m%d"))
         if req_start_date > req_end_date:
-            print("date input error, begin date %d > end date %d" % (req_start_date, req_end_date))
+            print("date input error, begin date %s > end date %s" % (req_start_date, req_end_date))
             self.data = None
             return
 
         self.stock_code = stock_code  # 股票代码
-        self.start_str = req_start_str
-        self.end_str = req_end_str
+        self.start_str = req_start_date.strftime("%Y-%m-%d")
+        self.end_str = req_end_date.strftime("%Y-%m-%d")
 
         get_data_from_network = True
         network_data = ts.get_k_data(stock_code, self.start_str, self.end_str)
@@ -223,7 +223,7 @@ class GetStockRawData(object):
 
         # 如果网络正常且本地文件不存在，则使用网络数据分析，并保存本地文件  tok
         elif (os.path.exists(stock_file) is not True) and (get_data_from_network is True):
-            print("Stock file %s is not exist, create %s, use network data to analyse" % (stock_file, stock_file))
+            # print("Stock file %s is not exist, create %s, use network data to analyse" % (stock_file, stock_file))
 
             network_data.to_csv(stock_file, sep=',', index=False)
             self.data = network_data
