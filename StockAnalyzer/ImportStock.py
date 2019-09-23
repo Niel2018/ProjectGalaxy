@@ -232,6 +232,9 @@ class GetStockRawData(object):
             return
         # 如果网络正常且本地文件存在，则使用网络数据更新本地文件  tok
         elif (os.path.exists(stock_file) is True) and (get_data_from_network is True):
+            self.data = network_data
+            return  # 加快执行速度，直接采用网络数据，如果需要比较的话放开下面代码。
+
             print("Stock file %s is exist, update %s, use network data to analyse" % (stock_file, stock_file))
             # 检查start end日期范围内的数据，如果不完整则补全，如果完整则检查数据是否有变化，如果有变化则备份原来文件并修改保存
             local_data = get_local_data(stock_file)
